@@ -18,7 +18,9 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   config-server:
-    build: ./infraestructure-domain/config-server
+    build: 
+      context: ./infraestructure-domain/config-server
+      dockerfile: Dockerfile
     container_name: config-server
     ports:
       - "8888:8888"
@@ -27,6 +29,8 @@ services:
       - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:///config-repo
       #- CONFIG_USER=admin
       #- CONFIG_PASSWORD=admin123
+    depends_on:
+      - maven-base
     volumes:
       - ./infraestructure-domain/config-repo:/config-repo
 
