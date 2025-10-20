@@ -1,18 +1,39 @@
+# Usar la imagen base de Maven construida localmente
+ARG MAVEN_BASE_IMAGE=springneobank-maven
+FROM ${MAVEN_BASE_IMAGE} AS build
+
+WORKDIR /app
+
+# Copiar únicamente el microservicio auth
+COPY pom.xml ./pom.xml
+COPY src ./src
+COPY wait-for-config.sh ./wait-for-config.sh
+
+# Compilar el microservicio
+RUN mvn clean package spring-boot:repackage -DskipTests
+
+# Stage 2: runtime
 FROM eclipse-temurin:21-jdk-alpine
 
+# Crear usuario y grupo para ejecutar la app
 RUN addgroup -g 1028 devopsc \
     && adduser -D -G devopsc admin \
     && apk add --no-cache curl
 
 VOLUME /tmp
 
-COPY target/auth-*-exec.jar app.jar
+# Copiar el JAR y el script desde la etapa de build
+COPY --from=build /app/target/auth-*-exec.jar /app.jar
+COPY --from=build /app/wait-for-config.sh /wait-for-config.sh
 
-COPY wait-for-config.sh /wait-for-config.sh
-RUN chmod +x /wait-for-config.sh
 
-RUN chown -R admin:devopsc /app.jar /tmp /wait-for-config.sh
+#RUN chmod +x /wait-for-config.sh
+#RUN chown -R admin:devopsc /app.jar /tmp /wait-for-config.sh
+
+# Convertir a LF y dar permisos
+RUN dos2unix /wait-for-config.sh \
+    && chmod +x /wait-for-config.sh \
+    && chown -R admin:devopsc /app.jar /tmp /wait-for-config.sh
 
 USER admin
-
-ENTRYPOINT ["/wait-for-config.sh", "java","-jar","/app.jar"]
+ENTRYPOINT ["/wait-for-config.sh","java","-jar","/app.jar"]

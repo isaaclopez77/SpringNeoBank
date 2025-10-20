@@ -1,0 +1,57 @@
+services:
+  maven-base:
+    build:
+      context: .
+      dockerfile: docker/maven-base.Dockerfile
+    image: springneobank-maven
+    
+  postgres:
+    image: postgres:15
+    container_name: postgres_neobank
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  config-server:
+    build: ./infraestructure-domain/config-server
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=native
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:///config-repo
+      #- CONFIG_USER=admin
+      #- CONFIG_PASSWORD=admin123
+    volumes:
+      - ./infraestructure-domain/config-repo:/config-repo
+
+  auth:
+    build:
+      context: ./business-domain/auth
+      dockerfile: Dockerfile
+      args:
+        MAVEN_BASE_IMAGE: springneobank-maven
+    container_name: auth_service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      #- CONFIG_USER=admin
+      #- CONFIG_PASSWORD=admin123
+    depends_on:
+      - postgres
+      - config-server
+      - maven-base
+    ports:
+      - "8081:8081"
+
+volumes:
+  pgdata:
+
