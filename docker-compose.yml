@@ -27,12 +27,27 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=native
       - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:///config-repo
+      - EUREKA_SERVER=http://eureka-server:8761/eureka
       #- CONFIG_USER=admin
       #- CONFIG_PASSWORD=admin123
     depends_on:
       - maven-base
+      - eureka-server
     volumes:
       - ./infraestructure-domain/config-repo:/config-repo
+
+  eureka-server:
+    build:
+      context: ./infraestructure-domain/eureka
+      dockerfile: Dockerfile
+      args:
+        MAVEN_BASE_IMAGE: springneobank-maven
+    container_name: eureka-server
+    depends_on:
+      - postgres
+      - maven-base
+    ports:
+      - "8761:8761"
 
   auth:
     build:
@@ -44,6 +59,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - EUREKA_SERVER=http://eureka-server:8761/eureka
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASS=${DB_PASS}
@@ -53,8 +69,10 @@ services:
       - postgres
       - config-server
       - maven-base
+      - eureka-server
     ports:
       - "8081:8081"
+      
 
 volumes:
   pgdata:
