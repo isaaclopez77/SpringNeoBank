@@ -6,12 +6,12 @@
 	<parent>
         <groupId>com.springneobank.infraestructure-domain</groupId>
         <artifactId>infraestructure-domain</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
 	</parent>
 
 	<groupId>com.springneobank</groupId>
 	<artifactId>eureka</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>Eureka Server Microservice</name>
 
 	
