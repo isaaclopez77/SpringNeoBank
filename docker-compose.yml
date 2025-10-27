@@ -1,22 +1,70 @@
 services:
+
+  # ===============================
+  # Base image for Spring Boot Projects
+  # ===============================
   maven-base:
     build:
       context: .
       dockerfile: docker/maven-base.Dockerfile
     image: springneobank-maven
     
-  postgres:
+  # ===============================
+  # PostgreSQL for AUTH service
+  # ===============================
+  postgres_auth:
     image: postgres:15
-    container_name: postgres_neobank
+    container_name: postgres_auth
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: auth
+      POSTGRES_USER: ${DB_AUTH_USER}
+      POSTGRES_PASSWORD: ${DB_AUTH_PASS}
     ports:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # ===============================
+  # PostgreSQL for Keycloak Server
+  # ===============================
+  postgres_keycloak:
+    image: postgres:15
+    container_name: postgres_keycloak
+    environment:
+      POSTGRES_DB: keycloack
+      POSTGRES_USER: ${DB_KEYCLOACK_USER}
+      POSTGRES_PASSWORD: ${DB_KEYCLOACK_PASS}
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_keycloak:/var/lib/postgresql/data
+
+  # ===============================
+  # KEYCLOACK server
+  # ===============================
+  keycloak_server:
+    image: quay.io/keycloak/keycloak:23.0.3
+    container_name: id-keycloak-server
+    command: start-dev
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres_keycloak
+      KC_DB_URL_PORT: 5432
+      KC_DB_URL_DATABASE: keycloack
+      KC_DB_USERNAME: ${DB_KEYCLOACK_USER}
+      KC_DB_PASSWORD: ${DB_KEYCLOACK_PASS}
+      KC_PROXY: edge
+    ports:
+      - "8091:8080"
+    depends_on:
+      - postgres_keycloak
+
+  # ===============================
+  # Service CONFIG SERVER
+  # ===============================
   config-server:
     build: 
       context: ./infraestructure-domain/config-server
@@ -36,6 +84,9 @@ services:
     volumes:
       - ./infraestructure-domain/config-repo:/config-repo
 
+  # ===============================
+  # Service EUREKA
+  # ===============================
   eureka-server:
     build:
       context: ./infraestructure-domain/eureka
@@ -44,11 +95,14 @@ services:
         MAVEN_BASE_IMAGE: springneobank-maven
     container_name: eureka-server
     depends_on:
-      - postgres
+      - postgres_auth
       - maven-base
     ports:
       - "8761:8761"
 
+  # ===============================
+  # Service AUTH
+  # ===============================
   auth:
     build:
       context: ./business-domain/auth
@@ -60,20 +114,25 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - EUREKA_SERVER=http://eureka-server:8761/eureka
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
+      - DB_NAME=auth
+      - DB_AUTH_USER=${DB_AUTH_USER}
+      - DB_AUTH_PASS=${DB_AUTH_PASS}
+      - KC_REAL_ID=2obTJuVk5ynnIYBP3QI9yYvVWNe0i3NJXGNcwLPW6tE
+      - KC_SERVER=http://keycloak_server:8080/realms/
+      - KC_REAL_ID=${KC_REAL_ID}
+      - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
       #- CONFIG_USER=admin
       #- CONFIG_PASSWORD=admin123
     depends_on:
-      - postgres
+      - postgres_auth
       - config-server
       - maven-base
       - eureka-server
+      - keycloak_server
     ports:
       - "8081:8081"
       
-
 volumes:
   pgdata:
+  pgdata_keycloak:
 
