@@ -17,3 +17,17 @@ spring:
         initial-interval: 2000
         multiplier: 1.5
         max-interval: 10000
+
+keycloak:
+  base-uri: ${KC_SERVER:http://localhost:8091/realms/}
+  authorization-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/auth
+  user-info-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/userinfo
+  token-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/token
+  logout: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/logout
+  jwk-set-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/certs
+  certs-id: ${KC_REAL_ID}
+  client-id: front-angular-billing-app
+  client-secret: ${KEYCLOAK_PASSWORD}
+  scope: profile
+  authorization-grant-type: password
+  authorization-grant-type-refresh: refresh_token
