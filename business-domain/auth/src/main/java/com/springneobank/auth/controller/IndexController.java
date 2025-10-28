@@ -22,11 +22,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
-@RestController
+@RestController("/auth")
 public class IndexController {
 
     private Logger logger = LoggerFactory.getLogger(IndexController.class);
