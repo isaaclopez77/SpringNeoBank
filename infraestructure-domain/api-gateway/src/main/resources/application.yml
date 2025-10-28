@@ -8,7 +8,7 @@ spring:
         webflux:
           routes:
             - id: auth_service
-              uri: ${AUTH_URI:http://localhost:8081}
+              uri: lb://businessdomain-auth
               predicates:
                 - Path=/**
 

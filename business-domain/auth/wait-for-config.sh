@@ -2,8 +2,8 @@
 # wait-for-config.sh
 
 CONFIG_URL=http://config-server:8888/actuator/health
-TIMEOUT=60       # segundos totales de espera
-INTERVAL=2       # segundos entre intentos
+TIMEOUT=180       # segundos totales de espera
+INTERVAL=5       # segundos entre intentos
 
 echo "Esperando a que config-server esté listo en $CONFIG_URL..."
 

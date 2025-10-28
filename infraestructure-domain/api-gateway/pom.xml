@@ -11,12 +11,8 @@
 
 	<groupId>com.springneobank</groupId>
 	<artifactId>api-gateway</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1-SNAPSHOT</version>
 	<name>Api Gateway Microservice</name>
-
-	<properties>
-        <org.lombo.version>1.18.30</org.lombo.version>             
-    </properties>
 	
 	<dependencies>
 		<dependency>
