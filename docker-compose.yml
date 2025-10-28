@@ -100,6 +100,25 @@ services:
     ports:
       - "8761:8761"
 
+# ===============================
+  # Service API-GATEWAY
+  # ===============================
+  api-gateway:
+    build:
+      context: ./infraestructure-domain/api-gateway
+      dockerfile: Dockerfile
+      args:
+        MAVEN_BASE_IMAGE: springneobank-maven
+    container_name: api_gateway
+    environment:
+      - AUTH_URI=http://auth:8081
+      - EUREKA_SERVER=http://eureka-server:8761/eureka
+    depends_on:
+      - maven-base
+      - eureka-server
+    ports:
+      - "8080:8080"
+
   # ===============================
   # Service AUTH
   # ===============================
