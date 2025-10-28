@@ -11,6 +11,11 @@ spring:
               uri: lb://businessdomain-auth
               predicates:
                 - Path=/**
+              #filters:
+              #- AuthenticationFiltering
+      loadbalancer:
+        retry:
+          enabled: true
 
 server:
   port: 8080
