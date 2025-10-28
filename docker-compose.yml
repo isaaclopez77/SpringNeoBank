@@ -44,7 +44,7 @@ services:
   # ===============================
   keycloak_server:
     image: quay.io/keycloak/keycloak:23.0.3
-    container_name: id-keycloak-server
+    container_name: keycloak-server
     command: start-dev
     restart: unless-stopped
     environment:
@@ -100,7 +100,7 @@ services:
     ports:
       - "8761:8761"
 
-# ===============================
+  # ===============================
   # Service API-GATEWAY
   # ===============================
   api-gateway:
@@ -111,7 +111,6 @@ services:
         MAVEN_BASE_IMAGE: springneobank-maven
     container_name: api_gateway
     environment:
-      - AUTH_URI=http://auth:8081
       - EUREKA_SERVER=http://eureka-server:8761/eureka
     depends_on:
       - maven-base
@@ -148,8 +147,6 @@ services:
       - maven-base
       - eureka-server
       - keycloak_server
-    ports:
-      - "8081:8081"
       
 volumes:
   pgdata:
