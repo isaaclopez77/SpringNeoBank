@@ -25,7 +25,8 @@ import java.util.*;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
-@RestController("/auth")
+@RestController
+@RequestMapping("/auth")
 public class IndexController {
 
     private Logger logger = LoggerFactory.getLogger(IndexController.class);
