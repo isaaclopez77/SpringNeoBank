@@ -25,6 +25,21 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   # ===============================
+  # PostgreSQL for CUSTOMER service
+  # ===============================
+  postgres_customer:
+    image: postgres:15
+    container_name: postgres_customer
+    environment:
+      POSTGRES_DB: customer
+      POSTGRES_USER: ${DB_CUSTOMER_USER}
+      POSTGRES_PASSWORD: ${DB_CUSTOMER_PASS}
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata_customer:/var/lib/postgresql/data
+
+  # ===============================
   # PostgreSQL for Keycloak Server
   # ===============================
   postgres_keycloak:
@@ -147,8 +162,30 @@ services:
       - maven-base
       - eureka-server
       - keycloak_server
-      
+
+  # ===============================
+  # Service CUSTOMER
+  # ===============================
+  customer:
+    build:
+      context: ./business-domain/customer
+      dockerfile: Dockerfile
+      args:
+        MAVEN_BASE_IMAGE: springneobank-maven
+    container_name: customer_service
+    environment:
+      - DB_NAME=customer
+      - DB_CUSTOMER_USER=${DB_CUSTOMER_USER}
+      - DB_CUSTOMER_PASS=${DB_CUSTOMER_PASS}
+      - EUREKA_SERVER=http://eureka-server:8761/eureka
+    depends_on:
+      - postgres_customer
+      - config-server
+      - maven-base
+      - eureka-server
+
 volumes:
   pgdata:
   pgdata_keycloak:
+  pgdata_customer:
 
