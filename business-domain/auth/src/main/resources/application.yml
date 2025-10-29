@@ -19,15 +19,14 @@ spring:
         max-interval: 10000
 
 keycloak:
-  base-uri: ${KC_SERVER:http://localhost:8091/realms/}
-  authorization-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/auth
-  user-info-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/userinfo
-  token-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/token
-  logout: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/logout
-  jwk-set-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/certs
-  certs-id: ${KC_REAL_ID}
-  client-id: front-angular-billing-app
-  client-secret: ${KEYCLOAK_PASSWORD}
-  scope: profile
-  authorization-grant-type: password
-  authorization-grant-type-refresh: refresh_token
+  realm: SpringNeoBank
+  certs-id: ${KC_REALM_ID}
+  client-id: ${KC_CLIENT_ADMIN_ID}
+  client-secret: ${KC_CLIENT_ADMIN_SECRET}
+
+  base-uri: ${KC_SERVER:http://localhost:8091/}
+  admin-token-uri: ${keycloak.base-uri}/realms/master/protocol/openid-connect/token
+  create-user-uri: ${keycloak.base-uri}/admin/realms/${keycloak.realm}/users
+  user-info-uri: ${keycloak.base-uri}/realms/${keycloak.realm}/protocol/openid-connect/userinfo
+  jwk-set-uri: ${keycloak.base-uri}/realms/${keycloak.realm}/protocol/openid-connect/certs
+  

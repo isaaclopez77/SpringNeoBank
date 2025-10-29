@@ -22,8 +22,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
-import org.springframework.http.MediaType;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
 
 @RestController
 @RequestMapping("/auth")
@@ -36,6 +38,12 @@ public class IndexController {
 
     @Autowired
     private JwtService jwtService;
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password) {
+        restService.registerUser(username, email, password);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
 
     @GetMapping("/roles")
     public ResponseEntity<?> getRoles(@RequestHeader("Authorization") String authHeader) throws Exception {
@@ -62,30 +70,4 @@ public class IndexController {
         }
         return ResponseEntity.ok(HashMap);
     }
-    
-    @GetMapping("/valid")
-    public ResponseEntity<?> valid(@RequestHeader("Authorization") String authHeader) throws Exception  {
-        restService.checkValidity(authHeader);
-        return ResponseEntity.ok(new HashMap (){{
-            put("is_valid", "true");
-        }});
-    }
-
-    @PostMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> login(@RequestParam("username") String username, @RequestParam("password") String password) {
-        String login = restService.login(username, password);
-       return ResponseEntity.ok(login);
-    }
-
-    @PostMapping(value = "/logout", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> logout(@RequestParam(value = "refresh_token", name = "refresh_token") String refreshToken) throws Exception  {
-        restService.logout(refreshToken);
-        return ResponseEntity.ok(new HashMap (){{
-            put("logout", "true");
-        }});
-    }  
-    @PostMapping(value = "/refresh", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> refresh(@RequestParam(value = "refresh_token", name = "refresh_token") String refreshToken) throws Exception  {
-        return ResponseEntity.ok(restService.refresh(refreshToken));
-    }  
 }
