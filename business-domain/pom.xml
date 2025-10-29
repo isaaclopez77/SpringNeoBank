@@ -44,5 +44,6 @@
   
   <modules>
     <module>auth</module>
+    <module>customer</module>
   </modules>
 </project>
