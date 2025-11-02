@@ -12,10 +12,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name="users")
+@Table(name="kc_users")
 @Data
 @NoArgsConstructor
-public class User {
+public class KCUser {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,7 +26,7 @@ public class User {
     private LocalDateTime created_at;
     private LocalDateTime updated_at;
 
-    public User(UUID keycloakID, String email, String name, String lastName) {
+    public KCUser(UUID keycloakID, String email, String name, String lastName) {
         this.keycloakID = keycloakID;
         this.email = email;
         this.name = name;

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
 import com.springneobank.auth.service.KeycloakRestService;
-import com.springneobank.auth.service.UserService;
+import com.springneobank.auth.service.KCUserService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserRegisteredDLQListener {
 
     @Autowired
-    private UserService uService;
+    private KCUserService uService;
 
     @Autowired
     private KeycloakRestService kcService;

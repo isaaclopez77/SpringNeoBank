@@ -6,10 +6,10 @@
 package com.springneobank.auth.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.springneobank.auth.entities.User;
+import com.springneobank.auth.entities.KCUser;
 import com.springneobank.auth.messaging.UserRegisteredEvent;
 import com.springneobank.auth.messaging.UserRegisteredPublisher;
-import com.springneobank.auth.repositories.UsersRepository;
+import com.springneobank.auth.repositories.KCUsersRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,7 +39,7 @@ public class KeycloakRestService {
     private UserRegisteredPublisher urEventPublisher;
 
     @Autowired
-    private UsersRepository uRepository;
+    private KCUsersRepository uRepository;
 
     @Value("${keycloak.user-info-uri}")
     private String keycloakUserInfo;
@@ -143,8 +143,8 @@ public class KeycloakRestService {
                 UUID keycloakID = UUID.fromString(path.substring(path.lastIndexOf('/') + 1));
 
                 // Create User
-                User user = new User(keycloakID, email, name, lastName);
-                User usersaved = uRepository.save(user);
+                KCUser user = new KCUser(keycloakID, email, name, lastName);
+                KCUser usersaved = uRepository.save(user);
 
                 // Register RabbitMQ event
                 UserRegisteredEvent event = UserRegisteredEvent.builder()

@@ -6,14 +6,14 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.springneobank.auth.entities.User;
-import com.springneobank.auth.repositories.UsersRepository;
+import com.springneobank.auth.entities.KCUser;
+import com.springneobank.auth.repositories.KCUsersRepository;
 
 @Service
-public class UserService {
+public class KCUserService {
 
     @Autowired
-    private UsersRepository uRepository;
+    private KCUsersRepository uRepository;
 
     /**
      * Remove user by Keycloack ID
@@ -21,7 +21,7 @@ public class UserService {
      * @param keycloakID
      */
     public void removeUserByKeycloakID(UUID keycloakID) {
-        Optional<User> optUser = uRepository.findByKeycloakID(keycloakID);
+        Optional<KCUser> optUser = uRepository.findByKeycloakID(keycloakID);
 
         if(optUser.isPresent()) {
             uRepository.delete(optUser.get());
