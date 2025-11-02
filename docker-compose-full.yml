@@ -1,0 +1,215 @@
+services:
+
+  # ===============================
+  # Base image for Spring Boot Projects
+  # ===============================
+  maven-base:
+    build:
+      context: .
+      dockerfile: docker/maven-base.Dockerfile
+    image: springneobank-maven
+    
+  # ===============================
+  # PostgreSQL for AUTH service
+  # ===============================
+  postgres_auth:
+    image: postgres:15
+    container_name: postgres_auth
+    environment:
+      POSTGRES_DB: auth
+      POSTGRES_USER: ${DB_AUTH_USER}
+      POSTGRES_PASSWORD: ${DB_AUTH_PASS}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # ===============================
+  # PostgreSQL for CUSTOMER service
+  # ===============================
+  postgres_customer:
+    image: postgres:15
+    container_name: postgres_customer
+    environment:
+      POSTGRES_DB: customer
+      POSTGRES_USER: ${DB_CUSTOMER_USER}
+      POSTGRES_PASSWORD: ${DB_CUSTOMER_PASS}
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata_customer:/var/lib/postgresql/data
+
+  # ===============================
+  # PostgreSQL for Keycloak Server
+  # ===============================
+  postgres_keycloak:
+    image: postgres:15
+    container_name: postgres_keycloak
+    environment:
+      POSTGRES_DB: keycloack
+      POSTGRES_USER: ${DB_KEYCLOACK_USER}
+      POSTGRES_PASSWORD: ${DB_KEYCLOACK_PASS}
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_keycloak:/var/lib/postgresql/data
+
+  # ===============================
+  # KEYCLOACK server
+  # ===============================
+  keycloak_server:
+    image: quay.io/keycloak/keycloak:23.0.3
+    container_name: keycloak-server
+    command: start-dev
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres_keycloak
+      KC_DB_URL_PORT: 5432
+      KC_DB_URL_DATABASE: keycloack
+      KC_DB_USERNAME: ${DB_KEYCLOACK_USER}
+      KC_DB_PASSWORD: ${DB_KEYCLOACK_PASS}
+      KC_PROXY: edge
+    ports:
+      - "8091:8080"
+    depends_on:
+      - postgres_keycloak
+
+  # ===============================
+  # RabbitMQ
+  # ===============================
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBIT_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # ===============================
+  # Service CONFIG SERVER
+  # ===============================
+  config-server:
+    build: 
+      context: ./infraestructure-domain/config-server
+      dockerfile: Dockerfile
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=native
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:///config-repo
+      - EUREKA_SERVER=http://eureka-server:8761/eureka
+      #- CONFIG_USER=admin
+      #- CONFIG_PASSWORD=admin123
+    depends_on:
+      - maven-base
+      - eureka-server
+    volumes:
+      - ./infraestructure-domain/config-repo:/config-repo
+
+  # ===============================
+  # Service EUREKA
+  # ===============================
+  eureka-server:
+    build:
+      context: ./infraestructure-domain/eureka
+      dockerfile: Dockerfile
+      args:
+        MAVEN_BASE_IMAGE: springneobank-maven
+    container_name: eureka-server
+    depends_on:
+      - postgres_auth
+      - maven-base
+    ports:
+      - "8761:8761"
+
+  # ===============================
+  # Service API-GATEWAY
+  # ===============================
+  api-gateway:
+    build:
+      context: ./infraestructure-domain/api-gateway
+      dockerfile: Dockerfile
+      args:
+        MAVEN_BASE_IMAGE: springneobank-maven
+    container_name: api_gateway
+    environment:
+      - EUREKA_SERVER=http://eureka-server:8761/eureka
+    depends_on:
+      - maven-base
+      - eureka-server
+    ports:
+      - "8080:8080"
+
+  # ===============================
+  # Service AUTH
+  # ===============================
+  auth:
+    build:
+      context: ./business-domain/auth
+      dockerfile: Dockerfile
+      args:
+        MAVEN_BASE_IMAGE: springneobank-maven
+    container_name: auth_service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - EUREKA_SERVER=http://eureka-server:8761/eureka
+      - DB_NAME=auth
+      - DB_AUTH_USER=${DB_AUTH_USER}
+      - DB_AUTH_PASS=${DB_AUTH_PASS}
+      - KC_SERVER=http://keycloak_server:8080/
+      - KC_REALM_ID=${KC_REALM_ID}
+      - KC_CLIENT_ADMIN_ID=auth
+      - KC_CLIENT_ADMIN_SECRET=bjARMf2uYc3xbXEdOqsIQRUZ2yheZFEr
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_USERNAME=${RABBIT_USERNAME}
+      - RABBIT_PASSWORD=${RABBIT_PASSWORD}
+      #- CONFIG_USER=admin
+      #- CONFIG_PASSWORD=admin123
+    depends_on:
+      - postgres_auth
+      - config-server
+      - maven-base
+      - eureka-server
+      - keycloak_server
+
+  # ===============================
+  # Service CUSTOMER
+  # ===============================
+  customer:
+    build:
+      context: ./business-domain/customer
+      dockerfile: Dockerfile
+      args:
+        MAVEN_BASE_IMAGE: springneobank-maven
+    container_name: customer_service
+    environment:
+      - DB_HOST=jdbc:postgresql://postgres_customer:5432
+      - DB_NAME=customer
+      - DB_CUSTOMER_USER=${DB_CUSTOMER_USER}
+      - DB_CUSTOMER_PASS=${DB_CUSTOMER_PASS}
+      - EUREKA_SERVER=http://eureka-server:8761/eureka
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_USERNAME=${RABBIT_USERNAME}
+      - RABBIT_PASSWORD=${RABBIT_PASSWORD}
+    depends_on:
+      - postgres_customer
+      - config-server
+      - maven-base
+      - eureka-server
+
+volumes:
+  pgdata:
+  pgdata_keycloak:
+  pgdata_customer:
+  rabbitmq_data:
+

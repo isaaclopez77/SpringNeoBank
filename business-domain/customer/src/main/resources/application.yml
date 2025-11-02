@@ -5,10 +5,24 @@ spring:
     config:
         enabled: false
   datasource:
-    url: jdbc:postgresql://postgres_customer:5432/customer
+    url: ${DB_HOST:jdbc:postgresql://localhost:5435}/${DB_NAME:customer}
     username: ${DB_CUSTOMER_USER}
     password: ${DB_CUSTOMER_PASS}
     driver-class-name: org.postgresql.Driver
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: 5672
+    username: ${RABBIT_USERNAME}
+    password: ${RABBIT_PASSWORD}
+    dynamic: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        retry:
+          enabled: true
+          max-attempts: 5
+          initial-interval: 2000ms
+        default-requeue-rejected: false
 
   jpa:
     hibernate:

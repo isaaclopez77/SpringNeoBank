@@ -6,19 +6,28 @@
 package com.springneobank.auth.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.springneobank.auth.entities.User;
+import com.springneobank.auth.messaging.UserRegisteredEvent;
+import com.springneobank.auth.messaging.UserRegisteredPublisher;
+import com.springneobank.auth.repositories.UsersRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class KeycloakRestService {
@@ -26,11 +35,17 @@ public class KeycloakRestService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private UserRegisteredPublisher urEventPublisher;
+
+    @Autowired
+    private UsersRepository uRepository;
+
     @Value("${keycloak.user-info-uri}")
     private String keycloakUserInfo;
 
-    @Value("${keycloak.create-user-uri}")
-    private String createUserUri;
+    @Value("${keycloak.users-uri}")
+    private String usersUri;
 
     @Value("${keycloak.admin-token-uri}")
     private String adminTokenUri;
@@ -90,17 +105,23 @@ public class KeycloakRestService {
      * @param email
      * @param password
      */
-    public void registerUser(String username, String email, String password) {
+    public void registerUser(String username, String email, String name, String lastName, String password) {
+        // Get superAdmin token
         String token = getAdminAccessToken();
 
+        // Set header with superAdmin token
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
 
+        // Create payload
         Map<String, Object> payload = Map.of(
             "username", username,
             "email", email,
+            "firstName", name,
+            "lastName", lastName,
             "enabled", true,
+            "emailVerified", true,
             "credentials", List.of(Map.of(
                 "type", "password",
                 "value", password,
@@ -108,9 +129,64 @@ public class KeycloakRestService {
             ))
         );
 
+        // Build request
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
 
-        restTemplate.postForEntity(createUserUri, request, Void.class);
+        // Send request to Keycloak Users URL 
+        ResponseEntity<Void> resp = restTemplate.postForEntity(usersUri, request, Void.class);
+
+        if (resp.getStatusCode() == HttpStatus.CREATED) {
+            URI location = resp.getHeaders().getLocation();
+            if (location != null) {
+                // Get keycloack ID
+                String path = location.getPath(); // /admin/realms/SpringNeoBank/users/{id}
+                UUID keycloakID = UUID.fromString(path.substring(path.lastIndexOf('/') + 1));
+
+                // Create User
+                User user = new User(keycloakID, email, name, lastName);
+                User usersaved = uRepository.save(user);
+
+                // Register RabbitMQ event
+                UserRegisteredEvent event = UserRegisteredEvent.builder()
+                    .userId(usersaved.getId())
+                    .keycloakId(usersaved.getKeycloakID())
+                    .email(usersaved.getEmail())
+                    .name(usersaved.getName())
+                    .lastName(usersaved.getLastName())
+                    .build();
+
+                urEventPublisher.publish(event);
+            }
+        }
+    }
+
+    /**
+     * Delete a user in Keycloack
+     * 
+     * @param keycloakId
+     * @return true or false
+     */
+    public boolean deleteUser(UUID keycloakId) {
+        // Get superAdmin token
+        String token = getAdminAccessToken();
+
+        // Set token in headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        // Adding ID to user URI
+        String deleteUri = String.format("%s/%s", usersUri, keycloakId);
+
+        ResponseEntity<Void> response = restTemplate.exchange(
+                deleteUri,
+                org.springframework.http.HttpMethod.DELETE, // DELETE METHOD
+                request,
+                Void.class
+        );
+
+        return (response.getStatusCode() == HttpStatus.NO_CONTENT) ? true : false;
     }
 
     /**

@@ -31,8 +31,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 @RequestMapping("/auth")
 public class IndexController {
 
-    private Logger logger = LoggerFactory.getLogger(IndexController.class);
-
     @Autowired
     private KeycloakRestService restService;
 
@@ -40,10 +38,16 @@ public class IndexController {
     private JwtService jwtService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password) {
-        restService.registerUser(username, email, password);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
+    public ResponseEntity<?> register(
+        @RequestParam("username") String username,
+        @RequestParam("email") String email,
+        @RequestParam("name") String name,
+        @RequestParam("lastName") String lastName,
+        @RequestParam("password") String password) {
+            
+            restService.registerUser(username, email, name, lastName, password);
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+    }   
 
     @GetMapping("/roles")
     public ResponseEntity<?> getRoles(@RequestHeader("Authorization") String authHeader) throws Exception {

@@ -1,0 +1,20 @@
+package com.springneobank.customer.messaging;
+
+import java.util.UUID;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class UserRegisteredEvent {
+    private Long userId;
+    private UUID keycloakId;
+    private String email;
+    private String name;
+    private String lastName;
+}

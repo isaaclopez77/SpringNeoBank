@@ -1,16 +1,7 @@
 services:
 
   # ===============================
-  # Base image for Spring Boot Projects
-  # ===============================
-  maven-base:
-    build:
-      context: .
-      dockerfile: docker/maven-base.Dockerfile
-    image: springneobank-maven
-    
-  # ===============================
-  # PostgreSQL for AUTH service
+  # PostgreSQL para AUTH service
   # ===============================
   postgres_auth:
     image: postgres:15
@@ -25,7 +16,7 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   # ===============================
-  # PostgreSQL for CUSTOMER service
+  # PostgreSQL para CUSTOMER service
   # ===============================
   postgres_customer:
     image: postgres:15
@@ -40,7 +31,7 @@ services:
       - pgdata_customer:/var/lib/postgresql/data
 
   # ===============================
-  # PostgreSQL for Keycloak Server
+  # PostgreSQL para KEYCLOAK
   # ===============================
   postgres_keycloak:
     image: postgres:15
@@ -55,7 +46,7 @@ services:
       - pgdata_keycloak:/var/lib/postgresql/data
 
   # ===============================
-  # KEYCLOACK server
+  # KEYCLOAK server
   # ===============================
   keycloak_server:
     image: quay.io/keycloak/keycloak:23.0.3
@@ -78,114 +69,77 @@ services:
       - postgres_keycloak
 
   # ===============================
-  # Service CONFIG SERVER
+  # RabbitMQ
+  # ===============================
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBIT_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # ===============================
+  # CONFIG SERVER 
   # ===============================
   config-server:
-    build: 
-      context: ./infraestructure-domain/config-server
-      dockerfile: Dockerfile
+    image: eclipse-temurin:21-jdk-alpine
     container_name: config-server
+    working_dir: /app
+    volumes:
+      - ./infraestructure-domain/config-server/target/config-server-1.0.0-exec.jar:/app/config-server.jar
+      - ./infraestructure-domain/config-repo:/config-repo
+    command: ["java", "-jar", "/app/config-server.jar"]
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: file:///config-repo
+      EUREKA_SERVER: http://eureka-server:8761/eureka
     ports:
       - "8888:8888"
-    environment:
-      - SPRING_PROFILES_ACTIVE=native
-      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:///config-repo
-      - EUREKA_SERVER=http://eureka-server:8761/eureka
-      #- CONFIG_USER=admin
-      #- CONFIG_PASSWORD=admin123
     depends_on:
-      - maven-base
       - eureka-server
-    volumes:
-      - ./infraestructure-domain/config-repo:/config-repo
 
   # ===============================
-  # Service EUREKA
+  # EUREKA SERVER 
   # ===============================
   eureka-server:
-    build:
-      context: ./infraestructure-domain/eureka
-      dockerfile: Dockerfile
-      args:
-        MAVEN_BASE_IMAGE: springneobank-maven
+    image: eclipse-temurin:21-jdk-alpine
     container_name: eureka-server
-    depends_on:
-      - postgres_auth
-      - maven-base
+    working_dir: /app
+    volumes:
+      - ./infraestructure-domain/eureka/target/eureka-1.0.0-exec.jar:/app/eureka-server.jar
+    command: ["java", "-jar", "/app/eureka-server.jar"]
     ports:
       - "8761:8761"
-
-  # ===============================
-  # Service API-GATEWAY
-  # ===============================
-  api-gateway:
-    build:
-      context: ./infraestructure-domain/api-gateway
-      dockerfile: Dockerfile
-      args:
-        MAVEN_BASE_IMAGE: springneobank-maven
-    container_name: api_gateway
-    environment:
-      - EUREKA_SERVER=http://eureka-server:8761/eureka
-    depends_on:
-      - maven-base
-      - eureka-server
-    ports:
-      - "8080:8080"
-
-  # ===============================
-  # Service AUTH
-  # ===============================
-  auth:
-    build:
-      context: ./business-domain/auth
-      dockerfile: Dockerfile
-      args:
-        MAVEN_BASE_IMAGE: springneobank-maven
-    container_name: auth_service
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
-      - EUREKA_SERVER=http://eureka-server:8761/eureka
-      - DB_NAME=auth
-      - DB_AUTH_USER=${DB_AUTH_USER}
-      - DB_AUTH_PASS=${DB_AUTH_PASS}
-      - KC_SERVER=http://keycloak_server:8080/
-      - KC_REALM_ID=${KC_REALM_ID}
-      - KC_CLIENT_ADMIN_ID=auth
-      - KC_CLIENT_ADMIN_SECRET=bjARMf2uYc3xbXEdOqsIQRUZ2yheZFEr
-      #- CONFIG_USER=admin
-      #- CONFIG_PASSWORD=admin123
     depends_on:
       - postgres_auth
-      - config-server
-      - maven-base
-      - eureka-server
-      - keycloak_server
+      - postgres_customer
 
   # ===============================
-  # Service CUSTOMER
+  # API GATEWAY 
   # ===============================
-  customer:
-    build:
-      context: ./business-domain/customer
-      dockerfile: Dockerfile
-      args:
-        MAVEN_BASE_IMAGE: springneobank-maven
-    container_name: customer_service
+  api-gateway:
+    image: eclipse-temurin:21-jdk-alpine
+    container_name: api-gateway
+    working_dir: /app
+    volumes:
+      - ./infraestructure-domain/api-gateway/target/api-gateway-1.1.0-exec.jar:/app/api-gateway.jar
+    command: ["java", "-jar", "/app/api-gateway.jar"]
     environment:
-      - DB_NAME=customer
-      - DB_CUSTOMER_USER=${DB_CUSTOMER_USER}
-      - DB_CUSTOMER_PASS=${DB_CUSTOMER_PASS}
-      - EUREKA_SERVER=http://eureka-server:8761/eureka
+      EUREKA_SERVER: http://eureka-server:8761/eureka
+    ports:
+      - "8080:8080"
     depends_on:
-      - postgres_customer
-      - config-server
-      - maven-base
       - eureka-server
+      - config-server
 
 volumes:
   pgdata:
-  pgdata_keycloak:
   pgdata_customer:
-
+  pgdata_keycloak:
+  rabbitmq_data:
