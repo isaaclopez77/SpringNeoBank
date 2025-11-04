@@ -11,9 +11,9 @@
     </parent>
 
 	<groupId>com.springneobank</groupId>
-	<artifactId>customer</artifactId>
+	<artifactId>user</artifactId>
 	<version>1.0.0</version>
-	<name>Customer Microservice</name>
+	<name>User Microservice</name>
 	
 	<build>
 		<plugins>

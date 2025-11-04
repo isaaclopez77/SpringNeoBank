@@ -5,6 +5,11 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:local}
   config:
     import: optional:configserver:${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: 5672
+    username: ${RABBIT_USERNAME}
+    password: ${RABBIT_PASSWORD}
 
   cloud:
     config:
@@ -19,15 +24,21 @@ spring:
         max-interval: 10000
 
 keycloak:
-  base-uri: ${KC_SERVER:http://localhost:8091/realms/}
-  authorization-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/auth
-  user-info-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/userinfo
-  token-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/token
-  logout: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/logout
-  jwk-set-uri: ${keycloak.base-uri}SpringNeoBank/protocol/openid-connect/certs
-  certs-id: ${KC_REAL_ID}
-  client-id: front-angular-billing-app
-  client-secret: ${KEYCLOAK_PASSWORD}
-  scope: profile
-  authorization-grant-type: password
-  authorization-grant-type-refresh: refresh_token
+  realm: SpringNeoBank
+  certs-id: ${KC_REALM_ID}
+  client-id: ${KC_CLIENT_ADMIN_ID}
+  client-secret: ${KC_CLIENT_ADMIN_SECRET}
+
+  base-uri: ${KC_SERVER:http://localhost:8091/}
+  admin-token-uri: ${keycloak.base-uri}/realms/master/protocol/openid-connect/token
+  users-uri: ${keycloak.base-uri}/admin/realms/${keycloak.realm}/users
+  user-info-uri: ${keycloak.base-uri}/realms/${keycloak.realm}/protocol/openid-connect/userinfo
+  jwk-set-uri: ${keycloak.base-uri}/realms/${keycloak.realm}/protocol/openid-connect/certs
+
+#logging:
+#  level:
+#    root: DEBUG
+#    org:
+#      springframework:
+#        web: DEBUG
+#      springneobank: DEBUG
