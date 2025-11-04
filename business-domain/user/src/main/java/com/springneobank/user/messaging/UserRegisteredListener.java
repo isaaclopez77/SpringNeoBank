@@ -30,11 +30,11 @@ public class UserRegisteredListener {
 
             uService.createUser(event.getUserId(), event.getPhone(), true);
 
-            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
             log.info("Procesado evento handleUserRegistered");
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
         } catch(Exception e) {
-            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
             log.error("Error procesando evento, enviado a DLQ: {}", e.getMessage());
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
         }
     }
 }
