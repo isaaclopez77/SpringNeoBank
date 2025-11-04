@@ -1,0 +1,31 @@
+package com.springneobank.auth.entities;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name="kc_users")
+@Data
+@NoArgsConstructor
+public class KCUser {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private UUID keycloakID;
+    private LocalDateTime created_at;
+    private LocalDateTime updated_at;
+
+    public KCUser(UUID keycloakID, String username, String password, String email, String name, String lastName) {
+        this.keycloakID = keycloakID;
+        this.created_at = LocalDateTime.now();
+        this.updated_at = LocalDateTime.now();
+    }
+}
