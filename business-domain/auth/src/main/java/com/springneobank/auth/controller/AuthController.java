@@ -5,48 +5,68 @@
  */
 package com.springneobank.auth.controller;
 
-import com.springneobank.auth.service.KeycloakRestService;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.springneobank.auth.service.KeycloakService;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.springneobank.auth.entities.KCUser;
+import com.springneobank.auth.messaging.UserRegisteredEvent;
+import com.springneobank.auth.messaging.UserRegisteredPublisher;
 import com.springneobank.auth.service.JwtService;
+import com.springneobank.auth.service.KCUserService;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.web.bind.annotation.*;
-
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
 
 @RestController
 @RequestMapping("/auth")
-public class IndexController {
+public class AuthController {
 
     @Autowired
-    private KeycloakRestService restService;
+    private KeycloakService kcService;
+
+    @Autowired
+    private KCUserService databaseService;
+
+    @Autowired
+    private UserRegisteredPublisher urEventPublisher;
 
     @Autowired
     private JwtService jwtService;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(
-        @RequestParam("username") String username,
-        @RequestParam("email") String email,
-        @RequestParam("name") String name,
-        @RequestParam("lastName") String lastName,
-        @RequestParam("password") String password) {
+            @RequestParam("username") String username,
+            @RequestParam("email") String email,
+            @RequestParam("name") String name,
+            @RequestParam("lastName") String lastName,
+            @RequestParam("password") String password,
+            @RequestParam("phone") String phone) {
             
-            restService.registerUser(username, email, name, lastName, password);
+        // Create user in keycloack 
+        UUID keycloakID = kcService.registerUser(username, password, email, name, lastName, phone);
+
+        if(keycloakID != null) {
+            // Create database relation
+            KCUser kcUser = databaseService.createKCUser(keycloakID, username, password, email, name, lastName);
+                
+            // Register RabbitMQ event
+            UserRegisteredEvent event = UserRegisteredEvent.builder()
+                .userId(kcUser.getId())
+                .phone(phone)
+                .build();
+
+            urEventPublisher.publish(event);
+
             return ResponseEntity.status(HttpStatus.CREATED).build();
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }   
 
     @GetMapping("/roles")

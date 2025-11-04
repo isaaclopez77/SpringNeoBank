@@ -5,7 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
-import com.springneobank.auth.service.KeycloakRestService;
+import com.springneobank.auth.service.KeycloakService;
+import com.springneobank.auth.entities.KCUser;
 import com.springneobank.auth.service.KCUserService;
 
 import lombok.RequiredArgsConstructor;
@@ -17,10 +18,10 @@ import lombok.extern.slf4j.Slf4j;
 public class UserRegisteredDLQListener {
 
     @Autowired
-    private KCUserService uService;
+    private KCUserService KCUService;
 
     @Autowired
-    private KeycloakRestService kcService;
+    private KeycloakService kcService;
 
     @RabbitListener(queues = RabbitConfig.DLQ_QUEUE)
     public void handleUserRegisteredDLQ(UserRegisteredEvent event) {
@@ -29,9 +30,12 @@ public class UserRegisteredDLQListener {
 
         boolean kcSuccess = false;
 
-        // Delete from Keycloak
+        // Get KC user
+        KCUser user = KCUService.getUserByID(event.getUserId());
+
+        // Delete from KC
         try{
-            kcSuccess = kcService.deleteUser(event.getKeycloakId());
+            kcSuccess = kcService.deleteUser(user.getKeycloakID());
         } catch (HttpClientErrorException.NotFound e) {
             log.warn("Keycloak user not found, ignoring DLQ");
         } catch (Exception e) {
@@ -41,7 +45,7 @@ public class UserRegisteredDLQListener {
         
         // Delete from database
         if(kcSuccess) {
-            uService.removeUserByKeycloakID(event.getKeycloakId());
+            KCUService.removeUser(user);
 
             log.info("DQL Success: Deleted from KC y DDBB");
         }

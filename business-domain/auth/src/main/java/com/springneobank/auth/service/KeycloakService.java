@@ -6,8 +6,6 @@
 package com.springneobank.auth.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.springneobank.auth.entities.KCUser;
-import com.springneobank.auth.messaging.UserRegisteredEvent;
 import com.springneobank.auth.messaging.UserRegisteredPublisher;
 import com.springneobank.auth.repositories.KCUsersRepository;
 
@@ -30,16 +28,10 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
-public class KeycloakRestService {
+public class KeycloakService {
 
     @Autowired
     private RestTemplate restTemplate;
-
-    @Autowired
-    private UserRegisteredPublisher urEventPublisher;
-
-    @Autowired
-    private KCUsersRepository uRepository;
 
     @Value("${keycloak.user-info-uri}")
     private String keycloakUserInfo;
@@ -105,7 +97,10 @@ public class KeycloakRestService {
      * @param email
      * @param password
      */
-    public void registerUser(String username, String email, String name, String lastName, String password) {
+    public UUID registerUser(String username, String password, String email, String name, String lastName, String phone) {
+
+        UUID keycloakID = null;
+
         // Get superAdmin token
         String token = getAdminAccessToken();
 
@@ -138,35 +133,22 @@ public class KeycloakRestService {
         if (resp.getStatusCode() == HttpStatus.CREATED) {
             URI location = resp.getHeaders().getLocation();
             if (location != null) {
-                // Get keycloack ID
+                // Get keycloak ID
                 String path = location.getPath(); // /admin/realms/SpringNeoBank/users/{id}
-                UUID keycloakID = UUID.fromString(path.substring(path.lastIndexOf('/') + 1));
-
-                // Create User
-                KCUser user = new KCUser(keycloakID, email, name, lastName);
-                KCUser usersaved = uRepository.save(user);
-
-                // Register RabbitMQ event
-                UserRegisteredEvent event = UserRegisteredEvent.builder()
-                    .userId(usersaved.getId())
-                    .keycloakId(usersaved.getKeycloakID())
-                    .email(usersaved.getEmail())
-                    .name(usersaved.getName())
-                    .lastName(usersaved.getLastName())
-                    .build();
-
-                urEventPublisher.publish(event);
+                keycloakID = UUID.fromString(path.substring(path.lastIndexOf('/') + 1));
             }
         }
+
+        return keycloakID;
     }
 
     /**
      * Delete a user in Keycloack
      * 
-     * @param keycloakId
+     * @param kcID
      * @return true or false
      */
-    public boolean deleteUser(UUID keycloakId) {
+    public boolean deleteUser(UUID kcID) {
         // Get superAdmin token
         String token = getAdminAccessToken();
 
@@ -174,10 +156,10 @@ public class KeycloakRestService {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
 
-        HttpEntity<Void> request = new HttpEntity<>(headers);
+        HttpEntity<Void> request = new HttpEntity<>(headers);        
 
         // Adding ID to user URI
-        String deleteUri = String.format("%s/%s", usersUri, keycloakId);
+        String deleteUri = String.format("%s/%s", usersUri, kcID);
 
         ResponseEntity<Void> response = restTemplate.exchange(
                 deleteUri,

@@ -20,20 +20,12 @@ public class KCUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private UUID keycloakID;
-    private String email;
-    private String name;
-    private String lastName;
     private LocalDateTime created_at;
     private LocalDateTime updated_at;
 
-    public KCUser(UUID keycloakID, String email, String name, String lastName) {
+    public KCUser(UUID keycloakID, String username, String password, String email, String name, String lastName) {
         this.keycloakID = keycloakID;
-        this.email = email;
-        this.name = name;
-        this.lastName = lastName;
         this.created_at = LocalDateTime.now();
         this.updated_at = LocalDateTime.now();
     }
-
-    
 }

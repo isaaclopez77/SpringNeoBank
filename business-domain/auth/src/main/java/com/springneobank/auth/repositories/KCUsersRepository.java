@@ -8,9 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import java.util.UUID;
 
-
 @Repository
 public interface KCUsersRepository extends JpaRepository<KCUser, Long>{
 
     public Optional<KCUser> findByKeycloakID(UUID keycloakID);
+
+    public Optional<KCUser> findById(Long id);
 }
