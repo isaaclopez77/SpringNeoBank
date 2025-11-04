@@ -1,4 +1,4 @@
-package com.springneobank.customer.messaging;
+package com.springneobank.user.messaging;
 
 import java.io.IOException;
 
@@ -20,7 +20,7 @@ public class UserRegisteredListener {
 
     @RabbitListener(queues = RabbitConfig.QUEUE)
     public void handleUserRegistered(UserRegisteredEvent event, Channel channel, Message message) throws IOException {
-        log.info("Recibido evento UserRegistered: {}", event);
+        //log.info("Recibido evento UserRegistered: {}", event);
 
         try{
             /*Customer customer = new Customer(
@@ -34,13 +34,13 @@ public class UserRegisteredListener {
 
             customerRepository.save(customer);*/
 
-            //throw new Exception("ajjjajjajajjjjjaaaajj");
+            //throw new Exception("simulating exception");
 
             //channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
             //log.info("Procesado evento handleUserRegistered");
         } catch(Exception e) {
             channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
-            log.error("Error procesando evento, enviado a DLQ: {}", e.getMessage());
+            //log.error("Error procesando evento, enviado a DLQ: {}", e.getMessage());
         }
 
         

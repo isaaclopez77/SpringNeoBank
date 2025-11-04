@@ -25,19 +25,19 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   # ===============================
-  # PostgreSQL for CUSTOMER service
+  # PostgreSQL for USER service
   # ===============================
-  postgres_customer:
+  postgres_user:
     image: postgres:15
-    container_name: postgres_customer
+    container_name: postgres_user
     environment:
-      POSTGRES_DB: customer
-      POSTGRES_USER: ${DB_CUSTOMER_USER}
-      POSTGRES_PASSWORD: ${DB_CUSTOMER_PASS}
+      POSTGRES_DB: uer
+      POSTGRES_USER: ${DB_USER_USER}
+      POSTGRES_PASSWORD: ${DB_USER_PASS}
     ports:
       - "5435:5432"
     volumes:
-      - pgdata_customer:/var/lib/postgresql/data
+      - pgdata_user:/var/lib/postgresql/data
 
   # ===============================
   # PostgreSQL for Keycloak Server
@@ -183,26 +183,26 @@ services:
       - keycloak_server
 
   # ===============================
-  # Service CUSTOMER
+  # Service USER
   # ===============================
-  customer:
+  user:
     build:
-      context: ./business-domain/customer
+      context: ./business-domain/user
       dockerfile: Dockerfile
       args:
         MAVEN_BASE_IMAGE: springneobank-maven
-    container_name: customer_service
+    container_name: user_service
     environment:
-      - DB_HOST=jdbc:postgresql://postgres_customer:5432
-      - DB_NAME=customer
-      - DB_CUSTOMER_USER=${DB_CUSTOMER_USER}
-      - DB_CUSTOMER_PASS=${DB_CUSTOMER_PASS}
+      - DB_HOST=jdbc:postgresql://postgres_user:5432
+      - DB_NAME=user
+      - DB_USER_USER=${DB_USER_USER}
+      - DB_USER_PASS=${DB_USER_PASS}
       - EUREKA_SERVER=http://eureka-server:8761/eureka
       - RABBIT_HOST=rabbitmq
       - RABBIT_USERNAME=${RABBIT_USERNAME}
       - RABBIT_PASSWORD=${RABBIT_PASSWORD}
     depends_on:
-      - postgres_customer
+      - postgres_user
       - config-server
       - maven-base
       - eureka-server
@@ -210,6 +210,6 @@ services:
 volumes:
   pgdata:
   pgdata_keycloak:
-  pgdata_customer:
+  pgdata_user:
   rabbitmq_data:
 

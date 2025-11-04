@@ -1,13 +1,13 @@
 spring:
   application:
-    name: businessdomain-customer
+    name: businessdomain-user
   cloud:
     config:
         enabled: false
   datasource:
-    url: ${DB_HOST:jdbc:postgresql://localhost:5435}/${DB_NAME:customer}
-    username: ${DB_CUSTOMER_USER}
-    password: ${DB_CUSTOMER_PASS}
+    url: ${DB_HOST:jdbc:postgresql://localhost:5435}/${DB_NAME:user}
+    username: ${DB_USER_USER}
+    password: ${DB_USER_PASS}
     driver-class-name: org.postgresql.Driver
   rabbitmq:
     host: ${RABBIT_HOST:localhost}

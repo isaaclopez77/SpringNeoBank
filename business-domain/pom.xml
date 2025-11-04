@@ -61,6 +61,6 @@
   
   <modules>
     <module>auth</module>
-    <module>customer</module>
+    <module>user</module>
   </modules>
 </project>

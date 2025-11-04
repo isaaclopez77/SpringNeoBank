@@ -1,4 +1,4 @@
-package com.springneobank.customer.messaging;
+package com.springneobank.user.messaging;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
