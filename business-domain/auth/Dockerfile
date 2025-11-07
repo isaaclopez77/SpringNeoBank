@@ -23,7 +23,7 @@ RUN addgroup -g 1028 devopsc \
 VOLUME /tmp
 
 # Copiar el JAR y el script desde la etapa de build
-COPY --from=build /app/target/auth-*-exec.jar /app.jar
+COPY --from=build /app/target/auth-exec.jar /app.jar
 COPY --from=build /app/wait-for-config.sh /wait-for-config.sh
 
 

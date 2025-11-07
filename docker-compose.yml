@@ -92,7 +92,7 @@ services:
     container_name: config-server
     working_dir: /app
     volumes:
-      - ./infraestructure-domain/config-server/target/config-server-1.0.0-exec.jar:/app/config-server.jar
+      - ./infraestructure-domain/config-server/target/config-server-exec.jar:/app/config-server.jar
       - ./infraestructure-domain/config-repo:/config-repo
     command: ["java", "-jar", "/app/config-server.jar"]
     environment:
@@ -112,7 +112,7 @@ services:
     container_name: eureka-server
     working_dir: /app
     volumes:
-      - ./infraestructure-domain/eureka/target/eureka-1.0.0-exec.jar:/app/eureka-server.jar
+      - ./infraestructure-domain/eureka/target/eureka-exec.jar:/app/eureka-server.jar
     command: ["java", "-jar", "/app/eureka-server.jar"]
     ports:
       - "8761:8761"
@@ -128,7 +128,7 @@ services:
     container_name: api-gateway
     working_dir: /app
     volumes:
-      - ./infraestructure-domain/api-gateway/target/api-gateway-1.1.0-exec.jar:/app/api-gateway.jar
+      - ./infraestructure-domain/api-gateway/target/api-gateway-exec.jar:/app/api-gateway.jar
     command: ["java", "-jar", "/app/api-gateway.jar"]
     environment:
       EUREKA_SERVER: http://eureka-server:8761/eureka

@@ -18,7 +18,7 @@ RUN addgroup -g 1028 devopsc \
 
 VOLUME /tmp
 
-COPY --from=build /app/target/api-gateway-*-exec.jar /app.jar
+COPY --from=build /app/target/api-gateway-exec.jar /app.jar
 
 RUN chown -R admin:devopsc /app.jar /tmp
 

@@ -19,7 +19,7 @@ RUN addgroup -g 1028 devopsc \
 VOLUME /tmp
 
 #COPY target/config-server-*-exec.jar app.jar
-COPY --from=build /app/target/eureka-*-exec.jar /app.jar
+COPY --from=build /app/target/eureka-exec.jar /app.jar
 
 RUN chown -R admin:devopsc /app.jar /tmp
 
