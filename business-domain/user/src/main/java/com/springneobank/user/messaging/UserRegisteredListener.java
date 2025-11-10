@@ -4,11 +4,10 @@ import java.io.IOException;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.rabbitmq.client.Channel;
-import com.springneobank.user.entities.User;
-import com.springneobank.user.repositories.UserRepository;
 import com.springneobank.user.services.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class UserRegisteredListener {
 
-    private final UserService uService;
+    @Autowired
+    private UserService uService;
 
     @RabbitListener(queues = RabbitConfig.QUEUE)
     public void handleUserRegistered(UserRegisteredEvent event, Channel channel, Message message) throws IOException {
