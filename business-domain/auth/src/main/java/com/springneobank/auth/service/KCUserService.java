@@ -26,8 +26,19 @@ public class KCUserService {
      * @param name
      * @param lastName
      */
-    public KCUser createKCUser(UUID keycloakID, String username, String password, String email, String name, String lastName) {
-        return uRepository.save(new KCUser(keycloakID, username, password, email, name, lastName));
+    public KCUser createKCUser(UUID keycloakID) {
+        return uRepository.save(new KCUser(keycloakID, true));
+    }
+
+    /**
+     * Deactivate: Set user status 0 in Database
+     * 
+     * @param kcuser
+     * @return
+     */
+    public KCUser deactivateUser(KCUser kcuser) {
+        kcuser.setStatus(false);
+        return uRepository.save(kcuser);
     }
 
     /**
@@ -47,6 +58,23 @@ public class KCUserService {
      */
     public KCUser getUserByID(Long id) {
         return uRepository.findById(id).orElse(null);
+    }
+
+    /**
+     * Get Keycloak ID by user ID
+     * 
+     * @param id
+     * @return
+     */
+    public UUID getKeycloakIDByUserID(Long id) {
+        UUID kcID = null;
+
+        Optional<KCUser> optUser = uRepository.findById(id);
+        if(optUser.isPresent()) {
+            kcID = optUser.get().getKeycloakID();
+        }
+
+        return kcID;
     }
 
 }

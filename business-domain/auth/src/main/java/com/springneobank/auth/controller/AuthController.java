@@ -11,8 +11,10 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.springneobank.auth.entities.KCUser;
-import com.springneobank.auth.messaging.UserRegisteredEvent;
-import com.springneobank.auth.messaging.UserRegisteredPublisher;
+import com.springneobank.auth.messaging.UserRegistered.UserRegisteredEvent;
+import com.springneobank.auth.messaging.UserRegistered.UserRegisteredPublisher;
+import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredEvent;
+import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredPublisher;
 import com.springneobank.auth.service.JwtService;
 import com.springneobank.auth.service.KCUserService;
 
@@ -22,6 +24,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
 
 @RestController
 @RequestMapping("/auth")
@@ -37,6 +40,9 @@ public class AuthController {
     private UserRegisteredPublisher urEventPublisher;
 
     @Autowired
+    private UserUnregisteredPublisher unrEventPublisher;
+
+    @Autowired
     private JwtService jwtService;
 
     @PostMapping("/register")
@@ -49,11 +55,11 @@ public class AuthController {
             @RequestParam("phone") String phone) {
             
         // Create user in keycloack 
-        UUID keycloakID = kcService.registerUser(username, password, email, name, lastName, phone);
+        UUID keycloakID = kcService.registerUser(username, password, email, name, lastName);
 
         if(keycloakID != null) {
             // Create database relation
-            KCUser kcUser = databaseService.createKCUser(keycloakID, username, password, email, name, lastName);
+            KCUser kcUser = databaseService.createKCUser(keycloakID);
                 
             // Register RabbitMQ event
             UserRegisteredEvent event = UserRegisteredEvent.builder()
@@ -68,6 +74,33 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @PostMapping("/unregister")
+    public ResponseEntity<?> unregister(@RequestParam("user_id") Long user_id) {
+
+        KCUser kc_user = databaseService.getUserByID(user_id);
+
+        if(kc_user != null) {
+            // Deactivate in keycloak
+            kcService.deactivateUser(kc_user.getKeycloakID());
+
+            // In database
+            databaseService.deactivateUser(kc_user);
+            
+            // Unregister Rabbit event
+            UserUnregisteredEvent event = UserUnregisteredEvent.builder()
+                .userId(kc_user.getId())
+                .build();
+
+            unrEventPublisher.publish(event);
+
+            return ResponseEntity.status(HttpStatus.OK).build();
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+
+    }
+    
 
     @GetMapping("/validate_token")
     public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) throws Exception {

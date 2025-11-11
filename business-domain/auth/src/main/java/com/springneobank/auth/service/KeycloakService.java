@@ -6,8 +6,10 @@
 package com.springneobank.auth.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.springneobank.auth.messaging.UserRegisteredPublisher;
+import com.springneobank.auth.messaging.UserRegistered.UserRegisteredPublisher;
 import com.springneobank.auth.repositories.KCUsersRepository;
+
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class KeycloakService {
 
     @Autowired
@@ -97,7 +100,7 @@ public class KeycloakService {
      * @param email
      * @param password
      */
-    public UUID registerUser(String username, String password, String email, String name, String lastName, String phone) {
+    public UUID registerUser(String username, String password, String email, String name, String lastName) {
 
         UUID keycloakID = null;
 
@@ -140,6 +143,35 @@ public class KeycloakService {
         }
 
         return keycloakID;
+    }
+
+    /**
+     * Deactivate: Set status false in Keycloak Server
+     * 
+     * @param keycloakID
+     */
+    public void deactivateUser(UUID keycloakID){
+        // Get superAdmin token
+        String token = getAdminAccessToken();
+
+        // Set header with superAdmin token
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        // Create payload
+        Map<String, Object> payload = Map.of("enabled", false);
+
+        // Adding ID to user URI
+        String concreteUserUri = String.format("%s/%s", usersUri, keycloakID);
+
+        // Build request
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+
+        // Send request to Keycloak Users URL 
+        ResponseEntity<Void> response = restTemplate.exchange(concreteUserUri, org.springframework.http.HttpMethod.PUT, request, Void.class);
+
+        log.info(response.toString());
     }
 
     /**

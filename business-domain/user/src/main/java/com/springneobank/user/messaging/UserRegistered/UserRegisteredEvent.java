@@ -1,4 +1,4 @@
-package com.springneobank.user.messaging;
+package com.springneobank.user.messaging.UserRegistered;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
