@@ -11,8 +11,8 @@ spring:
               uri: lb://businessdomain-auth
               predicates:
                 - Path=/**
-              #filters:
-              #- AuthenticationFiltering
+              filters:
+                - AuthenticationFiltering
       loadbalancer:
         retry:
           enabled: true

@@ -10,9 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.util.StringUtils;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 @Component
 public class AuthenticationFiltering extends AbstractGatewayFilterFactory<AuthenticationFiltering.Config> {
@@ -39,10 +36,29 @@ public class AuthenticationFiltering extends AbstractGatewayFilterFactory<Authen
             String[] parts = authHeader.split(" ");
             if (parts.length != 2 || !"Bearer".equals(parts[0])) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Bad Authorization structure");
-            }                      
+            }
+
+            // Check token validity
+            String token = parts[1];
+
+            return wcBuilder.build()
+                .get()
+                .uri("http://businessdomain-auth/validate_token")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .retrieve()
+                .toBodilessEntity() // No need for a body, just check status
+                .flatMap(response -> {
+                    log.info("Token validated successfully");
+                    return chain.filter(exchange);
+                })
+                .onErrorMap(error -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Invalid or expired token",
+                        error.getCause()
+                ));
             
             // Check roles
-            return wcBuilder.build()
+            /*return wcBuilder.build()
                 .get()
                 .uri("http://businessdomain-auth/roles").header(HttpHeaders.AUTHORIZATION, parts[1]) // Endpoint already validate the token                           
                 .retrieve()
@@ -60,7 +76,8 @@ public class AuthenticationFiltering extends AbstractGatewayFilterFactory<Authen
                     return exchange;
             })
             .onErrorMap(error -> { throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Communication Error", error.getCause());})
-            .flatMap(chain::filter);
+            .flatMap(chain::filter); */
+            
             
         },1);
     }
