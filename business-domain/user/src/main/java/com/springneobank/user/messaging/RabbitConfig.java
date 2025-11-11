@@ -16,13 +16,21 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitConfig {
 
+    // --- Common Exchanges ---
     public static final String EXCHANGE = "user.exchange";
-    public static final String QUEUE = "user.registered.queue";
-    public static final String ROUTING_KEY = "user.registered";
+    public static final String REGISTER_DLX_EXCHANGE = "user.exchange.dlx";
 
-    public static final String DLX_EXCHANGE = "user.exchange.dlx";
-    public static final String DLQ_QUEUE = "user.registered.queue.dlq";
-    public static final String DLQ_ROUTING_KEY = "user.registered.dlq";
+    // --- User Register ---
+    public static final String REGISTER_QUEUE = "user.registered.queue";
+    public static final String REGISTER_ROUTING_KEY = "user.registered";
+
+    // --- User Register DLQ ---
+    public static final String REGISTER_DLQ_QUEUE = "user.registered.queue.dlq";
+    public static final String REGISTER_DLQ_ROUTING_KEY = "user.registered.dlq";
+
+    // --- User Unregister ---
+    public static final String UNREGISTER_QUEUE = "user.unregistered.queue";
+    public static final String UNREGISTER_ROUTING_KEY = "user.unregistered";
 
     @Bean
     public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
@@ -32,6 +40,7 @@ public class RabbitConfig {
     }
 
 
+    // --- Exchanges ---
     @Bean
     public TopicExchange userExchange() {
         return new TopicExchange(EXCHANGE);
@@ -39,39 +48,55 @@ public class RabbitConfig {
 
     @Bean
     public TopicExchange userDeadLetterExchange() {
-        return new TopicExchange(DLX_EXCHANGE);
+        return new TopicExchange(REGISTER_DLX_EXCHANGE);
     }
 
+
+    // --- Queues ---
     @Bean
     public Queue userRegisteredQueue() {
-        return QueueBuilder.durable(QUEUE)
-                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", DLQ_ROUTING_KEY)
+        return QueueBuilder.durable(REGISTER_QUEUE)
+                .withArgument("x-dead-letter-exchange", REGISTER_DLX_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", REGISTER_DLQ_ROUTING_KEY)
                 .build();
     }
 
     @Bean
     public Queue userRegisteredDlq() {
-        // Añadir TTL si quieres limpiar automáticamente los mensajes antiguos
-        return QueueBuilder.durable(DLQ_QUEUE)
-                //.withArgument("x-message-ttl", 3600000) // opcional: 1 hora
+        return QueueBuilder.durable(REGISTER_DLQ_QUEUE)
+                .withArgument("x-message-ttl", 3600000) // clean old messages: 1 hour
                 .build();
     }
 
     @Bean
+    public Queue userUnregisteredQueue() {
+        return QueueBuilder.durable(UNREGISTER_QUEUE)
+                .build();
+    }
+
+    // --- Bindings ---
+    @Bean
     public Binding userRegisteredBinding(@Qualifier("userRegisteredQueue") Queue userRegisteredQueue, @Qualifier("userExchange") TopicExchange userExchange) {
         return BindingBuilder.bind(userRegisteredQueue)
                 .to(userExchange())
-                .with(ROUTING_KEY);
+                .with(REGISTER_ROUTING_KEY);
     }
 
      @Bean
     public Binding userRegisteredDlqBinding(@Qualifier("userRegisteredDlq") Queue userRegisteredDlq, @Qualifier("userDeadLetterExchange") TopicExchange userDeadLetterExchange) {
         return BindingBuilder.bind(userRegisteredDlq)
                 .to(userDeadLetterExchange())
-                .with(DLQ_ROUTING_KEY);
+                .with(REGISTER_DLQ_ROUTING_KEY);
     }
 
+    @Bean
+    public Binding userUnregisteredBinding(@Qualifier("userUnregisteredQueue") Queue queue, @Qualifier("userExchange") TopicExchange exchange) {
+        return BindingBuilder.bind(queue)
+                .to(exchange)
+                .with(UNREGISTER_ROUTING_KEY);
+    }
+
+    // --- JSON Converter ---
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();

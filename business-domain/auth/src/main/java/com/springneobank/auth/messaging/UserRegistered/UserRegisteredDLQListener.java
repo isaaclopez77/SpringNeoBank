@@ -1,4 +1,4 @@
-package com.springneobank.auth.messaging;
+package com.springneobank.auth.messaging.UserRegistered;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +7,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import com.springneobank.auth.service.KeycloakService;
 import com.springneobank.auth.entities.KCUser;
+import com.springneobank.auth.messaging.RabbitConfig;
 import com.springneobank.auth.service.KCUserService;
 
 import lombok.RequiredArgsConstructor;
