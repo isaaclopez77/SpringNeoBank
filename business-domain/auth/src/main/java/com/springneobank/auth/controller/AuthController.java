@@ -102,25 +102,32 @@ public class AuthController {
     }
     
 
+    @GetMapping("/validate_token")
+    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) throws Exception {
+
+        DecodedJWT jwt = JWT.decode(authHeader.replace("Bearer", "").trim());
+        Jwk jwk = jwtService.getJwk();
+
+        // Check JWT is valid
+        Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
+        algorithm.verify(jwt);
+
+        // Check JWT is still active
+        Date expiryDate = jwt.getExpiresAt();
+        if (expiryDate.before(new Date())) {
+            throw new Exception("Token is expired");
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
     @GetMapping("/roles")
     public ResponseEntity<?> getRoles(@RequestHeader("Authorization") String authHeader) throws Exception {
         DecodedJWT jwt = JWT.decode(authHeader.replace("Bearer", "").trim());
 
-        // check JWT is valid
-        Jwk jwk = jwtService.getJwk();
-        Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
-
-        algorithm.verify(jwt);
-
-        // check JWT role is correct
+        // Check JWT role is correct
         List<String> roles = ((List) jwt.getClaim("realm_access").asMap().get("roles"));
 
-        // check JWT is still active
-        Date expiryDate = jwt.getExpiresAt();
-        if (expiryDate.before(new Date())) {
-            throw new Exception("token is expired");
-        }
-        // all validation passed
         HashMap HashMap = new HashMap();
         for (String str : roles) {
             HashMap.put(str, str.length());
