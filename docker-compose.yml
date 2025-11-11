@@ -37,9 +37,9 @@ services:
     image: postgres:15
     container_name: postgres_keycloak
     environment:
-      POSTGRES_DB: keycloack
-      POSTGRES_USER: ${DB_KEYCLOACK_USER}
-      POSTGRES_PASSWORD: ${DB_KEYCLOACK_PASS}
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: ${DB_KEYCLOAK_USER}
+      POSTGRES_PASSWORD: ${DB_KEYCLOAK_PASS}
     ports:
       - "5434:5432"
     volumes:
@@ -59,9 +59,9 @@ services:
       KC_DB: postgres
       KC_DB_URL_HOST: postgres_keycloak
       KC_DB_URL_PORT: 5432
-      KC_DB_URL_DATABASE: keycloack
-      KC_DB_USERNAME: ${DB_KEYCLOACK_USER}
-      KC_DB_PASSWORD: ${DB_KEYCLOACK_PASS}
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: ${DB_KEYCLOAK_USER}
+      KC_DB_PASSWORD: ${DB_KEYCLOAK_PASS}
       KC_PROXY: edge
     ports:
       - "8091:8080"
