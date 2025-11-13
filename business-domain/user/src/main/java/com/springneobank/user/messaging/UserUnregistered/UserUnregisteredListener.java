@@ -25,13 +25,15 @@ public class UserUnregisteredListener {
         log.info("Event receibed UserUnregistered: {}", event);
 
         try {
+            //throw new Exception("simulated");
+
             uService.deactivateUserByID(event.getUserId());
 
             log.info("User ID {} unregistered", event.getUserId());
             channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
         } catch (Exception e) {
             log.error("Error processing event, sending DLQ: {}", e.getMessage());
-            //channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
         }
     }
 }

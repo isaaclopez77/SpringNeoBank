@@ -175,6 +175,35 @@ public class KeycloakService {
     }
 
     /**
+     * Activate: Set status true in Keycloak Server
+     * 
+     * @param keycloakID
+     */
+    public void activateUser(UUID keycloakID){
+        // Get superAdmin token
+        String token = getAdminAccessToken();
+
+        // Set header with superAdmin token
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        // Create payload
+        Map<String, Object> payload = Map.of("enabled", true);
+
+        // Adding ID to user URI
+        String concreteUserUri = String.format("%s/%s", usersUri, keycloakID);
+
+        // Build request
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+
+        // Send request to Keycloak Users URL 
+        ResponseEntity<Void> response = restTemplate.exchange(concreteUserUri, org.springframework.http.HttpMethod.PUT, request, Void.class);
+
+        log.info(response.toString());
+    }
+
+    /**
      * Delete a user in Keycloack
      * 
      * @param kcID
