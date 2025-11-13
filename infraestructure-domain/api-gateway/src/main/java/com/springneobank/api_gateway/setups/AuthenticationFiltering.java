@@ -7,6 +7,7 @@ import org.springframework.cloud.gateway.filter.OrderedGatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
@@ -43,19 +44,22 @@ public class AuthenticationFiltering extends AbstractGatewayFilterFactory<Authen
 
             return wcBuilder.build()
                 .get()
-                .uri("http://businessdomain-auth/validate_token")
+                .uri("http://businessdomain-auth/auth/validate_token")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, clientResponse ->
+                    clientResponse.bodyToMono(String.class)
+                        .map(body -> new ResponseStatusException(
+                            clientResponse.statusCode(),
+                            "Token validation failed: " + body
+                        ))
+                )
                 .toBodilessEntity() // No need for a body, just check status
                 .flatMap(response -> {
                     log.info("Token validated successfully");
                     return chain.filter(exchange);
                 })
-                .onErrorMap(error -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED,
-                        "Invalid or expired token",
-                        error.getCause()
-                ));
+                .doOnError(error -> log.error("Token validation failed", error));
             
             // Check roles
             /*return wcBuilder.build()
