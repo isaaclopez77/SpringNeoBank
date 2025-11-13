@@ -2,7 +2,7 @@ package com.springneobank.auth.controller;
 
 import java.util.HashMap;
 import java.util.List;
-
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,9 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.springneobank.auth.entities.KCUser;
@@ -35,28 +33,33 @@ public class KCUserController {
     private KeycloakService kcService;
 
     @PostMapping("/unregister")
-    public ResponseEntity<?> unregister(@RequestParam("user_id") Long user_id) {
+    public ResponseEntity<?> unregister(@RequestHeader("Authorization") String authHeader) {
 
-        KCUser kc_user = databaseService.getUserByID(user_id);
+        // Get token to find KCID
+        String token = authHeader.replace("Bearer", "").trim();
+        DecodedJWT jwt = JWT.decode(token);
+        UUID kcID = UUID.fromString(jwt.getSubject());
 
-        if(kc_user != null) {
+        KCUser kcUser = databaseService.getUserByKCID(kcID);
+
+        if(kcUser != null) {
             // Deactivate in keycloak
-            kcService.deactivateUser(kc_user.getKeycloakID());
+            kcService.deactivateUser(kcID);
 
             // In database
-            databaseService.deactivateUser(kc_user);
+            databaseService.deactivateUser(kcUser);
             
             // Unregister Rabbit event
             UserUnregisteredEvent event = UserUnregisteredEvent.builder()
-                .userId(kc_user.getId())
+                .userId(kcUser.getId())
                 .build();
 
             unrEventPublisher.publish(event);
-
-            return ResponseEntity.status(HttpStatus.OK).build();
         } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.notFound().build();
         }
+        
+        return ResponseEntity.status(HttpStatus.OK).build();
 
     }
 
