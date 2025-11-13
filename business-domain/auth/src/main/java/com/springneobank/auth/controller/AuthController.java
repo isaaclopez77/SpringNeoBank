@@ -9,12 +9,11 @@ import com.springneobank.auth.service.KeycloakService;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.springneobank.auth.entities.KCUser;
 import com.springneobank.auth.messaging.UserRegistered.UserRegisteredEvent;
 import com.springneobank.auth.messaging.UserRegistered.UserRegisteredPublisher;
-import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredEvent;
-import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredPublisher;
 import com.springneobank.auth.service.JwtService;
 import com.springneobank.auth.service.KCUserService;
 
@@ -38,9 +37,6 @@ public class AuthController {
 
     @Autowired
     private UserRegisteredPublisher urEventPublisher;
-
-    @Autowired
-    private UserUnregisteredPublisher unrEventPublisher;
 
     @Autowired
     private JwtService jwtService;
@@ -75,63 +71,29 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/unregister")
-    public ResponseEntity<?> unregister(@RequestParam("user_id") Long user_id) {
-
-        KCUser kc_user = databaseService.getUserByID(user_id);
-
-        if(kc_user != null) {
-            // Deactivate in keycloak
-            kcService.deactivateUser(kc_user.getKeycloakID());
-
-            // In database
-            databaseService.deactivateUser(kc_user);
-            
-            // Unregister Rabbit event
-            UserUnregisteredEvent event = UserUnregisteredEvent.builder()
-                .userId(kc_user.getId())
-                .build();
-
-            unrEventPublisher.publish(event);
-
-            return ResponseEntity.status(HttpStatus.OK).build();
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-
-    }
-    
-
     @GetMapping("/validate_token")
     public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) throws Exception {
 
-        DecodedJWT jwt = JWT.decode(authHeader.replace("Bearer", "").trim());
-        Jwk jwk = jwtService.getJwk();
+        try{
+            String token = authHeader.replace("Bearer", "").trim();
+            DecodedJWT jwt = JWT.decode(token);
+            Jwk jwk = jwtService.getJwk();
 
-        // Check JWT is valid
-        Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
-        algorithm.verify(jwt);
+            // Check JWT is valid
+            Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
+            algorithm.verify(jwt);
 
-        // Check JWT is still active
-        Date expiryDate = jwt.getExpiresAt();
-        if (expiryDate.before(new Date())) {
-            throw new Exception("Token is expired");
+            // Check JWT is still active
+            Date expiryDate = jwt.getExpiresAt();
+            if (expiryDate.before(new Date())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token expired");
+            }
+            return ResponseEntity.ok("Token valid");
+        } catch(JWTVerificationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                             .body("Invalid token signature");
+        } catch(Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token validation failed: " + e.getMessage());
         }
-
-        return ResponseEntity.status(HttpStatus.OK).build();
-    }
-
-    @GetMapping("/roles")
-    public ResponseEntity<?> getRoles(@RequestHeader("Authorization") String authHeader) throws Exception {
-        DecodedJWT jwt = JWT.decode(authHeader.replace("Bearer", "").trim());
-
-        // Check JWT role is correct
-        List<String> roles = ((List) jwt.getClaim("realm_access").asMap().get("roles"));
-
-        HashMap HashMap = new HashMap();
-        for (String str : roles) {
-            HashMap.put(str, str.length());
-        }
-        return ResponseEntity.ok(HashMap);
     }
 }

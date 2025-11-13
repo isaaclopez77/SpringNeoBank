@@ -22,15 +22,15 @@ public class UserUnregisteredListener {
 
     @RabbitListener(queues = RabbitConfig.UNREGISTER_QUEUE)
     public void handleUserUnregistered(UserUnregisteredEvent event, Channel channel, Message message) throws IOException {
-        log.info("Recibido evento UserUnregistered: {}", event);
+        log.info("Event receibed UserUnregistered: {}", event);
 
         try {
             uService.deactivateUserByID(event.getUserId());
 
-            log.info("Usuario {} dado de baja", event.getUserId());
+            log.info("User ID {} unregistered", event.getUserId());
             channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
         } catch (Exception e) {
-            log.error("Error procesando evento, enviado a DLQ: {}", e.getMessage());
+            log.error("Error processing event, sending DLQ: {}", e.getMessage());
             //channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
         }
     }
