@@ -18,7 +18,7 @@ public class RabbitConfig {
 
     // --- Common Exchanges ---
     public static final String EXCHANGE = "user.exchange";
-    public static final String REGISTER_DLX_EXCHANGE = "user.exchange.dlx";
+    public static final String DLX_EXCHANGE = "user.exchange.dlx";
 
     // --- User Register ---
     public static final String REGISTER_QUEUE = "user.registered.queue";
@@ -31,6 +31,10 @@ public class RabbitConfig {
     // --- User Unregister ---
     public static final String UNREGISTER_QUEUE = "user.unregistered.queue";
     public static final String UNREGISTER_ROUTING_KEY = "user.unregistered";
+
+    // --- User Unregister  DLQ ---
+    public static final String UNREGISTER_DLQ_QUEUE = "user.unregistered.queue.dlq";
+    public static final String UNREGISTER_DLQ_ROUTING_KEY = "user.unregistered.dlq";
 
     @Bean
     public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
@@ -48,7 +52,7 @@ public class RabbitConfig {
 
     @Bean
     public TopicExchange userDeadLetterExchange() {
-        return new TopicExchange(REGISTER_DLX_EXCHANGE);
+        return new TopicExchange(DLX_EXCHANGE);
     }
 
 
@@ -56,7 +60,7 @@ public class RabbitConfig {
     @Bean
     public Queue userRegisteredQueue() {
         return QueueBuilder.durable(REGISTER_QUEUE)
-                .withArgument("x-dead-letter-exchange", REGISTER_DLX_EXCHANGE)
+                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
                 .withArgument("x-dead-letter-routing-key", REGISTER_DLQ_ROUTING_KEY)
                 .build();
     }
@@ -71,8 +75,18 @@ public class RabbitConfig {
     @Bean
     public Queue userUnregisteredQueue() {
         return QueueBuilder.durable(UNREGISTER_QUEUE)
+                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", UNREGISTER_DLQ_ROUTING_KEY)
                 .build();
     }
+
+    @Bean
+    public Queue userUnregisteredDlq() {
+        return QueueBuilder.durable(UNREGISTER_DLQ_QUEUE)
+                .withArgument("x-message-ttl", 3600000) // clean old messages: 1 hour
+                .build();
+    }
+         
 
     // --- Bindings ---
     @Bean
@@ -82,7 +96,7 @@ public class RabbitConfig {
                 .with(REGISTER_ROUTING_KEY);
     }
 
-     @Bean
+    @Bean
     public Binding userRegisteredDlqBinding(@Qualifier("userRegisteredDlq") Queue userRegisteredDlq, @Qualifier("userDeadLetterExchange") TopicExchange userDeadLetterExchange) {
         return BindingBuilder.bind(userRegisteredDlq)
                 .to(userDeadLetterExchange())
@@ -94,6 +108,13 @@ public class RabbitConfig {
         return BindingBuilder.bind(queue)
                 .to(exchange)
                 .with(UNREGISTER_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding userUnregisteredDlqBinding(@Qualifier("userUnregisteredDlq") Queue userUnregisteredDlq, @Qualifier("userDeadLetterExchange") TopicExchange userDeadLetterExchange) {
+        return BindingBuilder.bind(userUnregisteredDlq)
+                .to(userDeadLetterExchange())
+                .with(UNREGISTER_DLQ_ROUTING_KEY);
     }
 
     // --- JSON Converter ---

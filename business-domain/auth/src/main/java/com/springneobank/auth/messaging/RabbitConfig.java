@@ -21,7 +21,8 @@ public class RabbitConfig {
     public static final String UNREGISTER_ROUTING_KEY = "user.unregistered";
 
     // -- Listener
-    public static final String DLQ_QUEUE = "user.registered.queue.dlq";
+    public static final String REGISTER_DLQ_QUEUE = "user.registered.queue.dlq";
+    public static final String UNREGISTER_DLQ_QUEUE = "user.unregistered.queue.dlq";
 
     @Bean
     public TopicExchange userExchange() {
