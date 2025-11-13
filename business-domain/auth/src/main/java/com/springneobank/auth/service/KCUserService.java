@@ -42,6 +42,17 @@ public class KCUserService {
     }
 
     /**
+     * Activate: Set user status 1 in Database
+     * 
+     * @param kcuser
+     * @return
+     */
+    public KCUser activateUser(KCUser kcuser) {
+        kcuser.setStatus(true);
+        return uRepository.save(kcuser);
+    }
+
+    /**
      * Remove user by Keycloack ID
      * 
      * @param keycloakID

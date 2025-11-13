@@ -1,4 +1,4 @@
-package com.springneobank.auth.messaging.UserRegistered;
+package com.springneobank.auth.messaging.UserUnregistered;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class UserRegisteredDLQListener {
+public class UserUnregisteredDLQListener {
 
     @Autowired
     private KCUserService KCUService;
@@ -24,10 +24,10 @@ public class UserRegisteredDLQListener {
     @Autowired
     private KeycloakService kcService;
 
-    @RabbitListener(queues = RabbitConfig.REGISTER_DLQ_QUEUE)
-    public void handleUserRegisteredDLQ(UserRegisteredEvent event) {
+    @RabbitListener(queues = RabbitConfig.UNREGISTER_DLQ_QUEUE)
+    public void handleUserRegisteredDLQ(UserUnregisteredEvent event) {
 
-        log.info("Event received UserRegisteredDLQ: {}", event);
+        log.info("Event received UserUnregisteredDLQ: {}", event);
 
         boolean kcSuccess = false;
 
@@ -36,19 +36,20 @@ public class UserRegisteredDLQListener {
 
         // Delete from KC
         try{
-            kcSuccess = kcService.deleteUser(user.getKeycloakID());
+            kcService.activateUser(user.getKeycloakID());
+            kcSuccess = true;
         } catch (HttpClientErrorException.NotFound e) {
             log.warn("Keycloak user not found, ignoring DLQ");
         } catch (Exception e) {
-            log.error("Error processing DLQ UserRegisteredDLQListener", e);
+            log.error("Error processing DLQ UserUnregisteredDLQListener", e);
             throw e;
         }
         
         // Delete from database
         if(kcSuccess) {
-            KCUService.removeUser(user);
+            KCUService.activateUser(user);
 
-            log.info("DQL Success: Deleted from KC y DDBB");
+            log.info("DQL Success: Activated in KC y DDBB");
         }
     }
 }
