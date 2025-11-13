@@ -72,6 +72,16 @@ public class KCUserService {
     }
 
     /**
+     * Get KCUser by KCID
+     * 
+     * @param id
+     * @return
+     */
+    public KCUser getUserByKCID(UUID id) {
+        return uRepository.findByKeycloakID(id).orElse(null);
+    }
+
+    /**
      * Get Keycloak ID by user ID
      * 
      * @param id
