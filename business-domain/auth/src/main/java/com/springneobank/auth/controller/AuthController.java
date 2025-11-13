@@ -9,10 +9,11 @@ import com.springneobank.auth.service.KeycloakService;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.springneobank.auth.entities.KCUser;
-import com.springneobank.auth.messaging.UserRegisteredEvent;
-import com.springneobank.auth.messaging.UserRegisteredPublisher;
+import com.springneobank.auth.messaging.UserRegistered.UserRegisteredEvent;
+import com.springneobank.auth.messaging.UserRegistered.UserRegisteredPublisher;
 import com.springneobank.auth.service.JwtService;
 import com.springneobank.auth.service.KCUserService;
 
@@ -22,6 +23,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
 
 @RestController
 @RequestMapping("/auth")
@@ -49,11 +51,11 @@ public class AuthController {
             @RequestParam("phone") String phone) {
             
         // Create user in keycloack 
-        UUID keycloakID = kcService.registerUser(username, password, email, name, lastName, phone);
+        UUID keycloakID = kcService.registerUser(username, password, email, name, lastName);
 
         if(keycloakID != null) {
             // Create database relation
-            KCUser kcUser = databaseService.createKCUser(keycloakID, username, password, email, name, lastName);
+            KCUser kcUser = databaseService.createKCUser(keycloakID);
                 
             // Register RabbitMQ event
             UserRegisteredEvent event = UserRegisteredEvent.builder()
@@ -67,31 +69,31 @@ public class AuthController {
         } else {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-    }   
+    }
 
-    @GetMapping("/roles")
-    public ResponseEntity<?> getRoles(@RequestHeader("Authorization") String authHeader) throws Exception {
-        DecodedJWT jwt = JWT.decode(authHeader.replace("Bearer", "").trim());
+    @GetMapping("/validate_token")
+    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) throws Exception {
 
-        // check JWT is valid
-        Jwk jwk = jwtService.getJwk();
-        Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
+        try{
+            String token = authHeader.replace("Bearer", "").trim();
+            DecodedJWT jwt = JWT.decode(token);
+            Jwk jwk = jwtService.getJwk();
 
-        algorithm.verify(jwt);
+            // Check JWT is valid
+            Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
+            algorithm.verify(jwt);
 
-        // check JWT role is correct
-        List<String> roles = ((List) jwt.getClaim("realm_access").asMap().get("roles"));
-
-        // check JWT is still active
-        Date expiryDate = jwt.getExpiresAt();
-        if (expiryDate.before(new Date())) {
-            throw new Exception("token is expired");
+            // Check JWT is still active
+            Date expiryDate = jwt.getExpiresAt();
+            if (expiryDate.before(new Date())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token expired");
+            }
+            return ResponseEntity.ok("Token valid");
+        } catch(JWTVerificationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                             .body("Invalid token signature");
+        } catch(Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token validation failed: " + e.getMessage());
         }
-        // all validation passed
-        HashMap HashMap = new HashMap();
-        for (String str : roles) {
-            HashMap.put(str, str.length());
-        }
-        return ResponseEntity.ok(HashMap);
     }
 }

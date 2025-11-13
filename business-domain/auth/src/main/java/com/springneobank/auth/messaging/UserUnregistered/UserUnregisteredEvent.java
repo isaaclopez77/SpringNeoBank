@@ -1,6 +1,5 @@
-package com.springneobank.auth.messaging;
+package com.springneobank.auth.messaging.UserUnregistered;
 
-import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserRegisteredEvent implements Serializable {
+
+public class UserUnregisteredEvent {
     private Long userId;
-    private String phone;
 }

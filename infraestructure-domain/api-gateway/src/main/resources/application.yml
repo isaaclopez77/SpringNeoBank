@@ -7,12 +7,17 @@ spring:
       server:
         webflux:
           routes:
-            - id: auth_service
+            - id: auth_auth_routes
               uri: lb://businessdomain-auth
               predicates:
-                - Path=/**
-              #filters:
-              #- AuthenticationFiltering
+                - Path=/auth/**
+
+            - id: auth_user_routes
+              uri: lb://businessdomain-auth
+              predicates:
+                - Path=/user/**
+              filters:
+                - AuthenticationFiltering
       loadbalancer:
         retry:
           enabled: true
