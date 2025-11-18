@@ -5,16 +5,16 @@
  */
 package com.springneobank.auth.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.springneobank.auth.messaging.UserRegistered.UserRegisteredPublisher;
-import com.springneobank.auth.repositories.KCUsersRepository;
-
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.http.protocol.HTTP;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -51,46 +49,20 @@ public class KeycloakService {
     @Value("${keycloak.client-secret}")
     private String clientSecret;
 
-    /**
-     * Check if a token is valid 
-     * A successful user token will generate http code 200, other than that will create an exception
-     *
-     * @param token
-     * @return
-     * @throws Exception
-     */
-    public String checkValidity(String token) throws Exception {
-        return getUserInfo(token);
-    }
 
     /**
-     * Get rolesby token
-     * 
-     * @param token
-     * @return
-     * @throws Exception
-     */
-    public List<String> getRoles(String token) throws Exception {
-        String response = getUserInfo(token);
-
-        // get roles
-        Map map = new ObjectMapper().readValue(response, HashMap.class);
-        return (List<String>) map.get("roles");
-    }
-
-
-    /**
-     * Get user info by token
+     * Get Keycloak user data by token
      * 
      * @param token
      * @return
      */
-    private String getUserInfo(String token) {
-        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();     
-        headers.add("Authorization", token);
+    public Map<String, Object> getUserData(String token){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(null, headers);
-        return restTemplate.postForObject(keycloakUserInfo, request, String.class);
+        ResponseEntity<Map> response = restTemplate.exchange(keycloakUserInfo, HttpMethod.GET, entity, Map.class);
+        return response.getBody();
     }
 
     /**
@@ -230,6 +202,28 @@ public class KeycloakService {
         );
 
         return (response.getStatusCode() == HttpStatus.NO_CONTENT) ? true : false;
+    }
+
+    /**
+     * GET Keycloak UUID inside the Authorization header
+     * 
+     * @param token
+     * @return
+     */
+    public static UUID getKeycloakIDByAuthorizationHeader(String authHeader){
+        String token = getTokenByAuthHeader(authHeader);
+        DecodedJWT jwt = JWT.decode(token);
+        return UUID.fromString(jwt.getSubject());
+    }
+
+    /**
+     * Extract token inside the auth header
+     * 
+     * @param authHeader
+     * @return
+     */
+    public static String getTokenByAuthHeader(String authHeader){
+        return authHeader.replace("Bearer", "").trim();
     }
 
     /**

@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 
+import reactor.core.publisher.Mono;
+
 @Component
 public class AuthenticationFiltering extends AbstractGatewayFilterFactory<AuthenticationFiltering.Config> {
 
@@ -29,14 +31,14 @@ public class AuthenticationFiltering extends AbstractGatewayFilterFactory<Authen
         return new OrderedGatewayFilter((exchange, chain) -> {  
             // Check header
             if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing Authorization header");
+                return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing Authorization header"));
             }
              
              // Check bearer
             String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
             String[] parts = authHeader.split(" ");
             if (parts.length != 2 || !"Bearer".equals(parts[0])) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Bad Authorization structure");
+                return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Bad Authorization structure"));
             }
 
             // Check token validity
@@ -48,11 +50,13 @@ public class AuthenticationFiltering extends AbstractGatewayFilterFactory<Authen
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, clientResponse ->
-                    clientResponse.bodyToMono(String.class)
-                        .map(body -> new ResponseStatusException(
-                            clientResponse.statusCode(),
-                            "Token validation failed: " + body
-                        ))
+                    clientResponse.bodyToMono(String.class).flatMap(body -> Mono.error(
+                            new ResponseStatusException(
+                                clientResponse.statusCode(),
+                                "Token validation failed: " + body
+                            )
+                        )
+                    )
                 )
                 .toBodilessEntity() // No need for a body, just check status
                 .flatMap(response -> {
