@@ -4,23 +4,30 @@ spring:
 
   cloud:
     gateway:
-      server:
-        webflux:
-          routes:
-            - id: auth_auth_routes
-              uri: lb://businessdomain-auth
-              predicates:
-                - Path=/auth/**
+      routes:
+        # /auth
+        - id: auth_auth_routes
+          uri: lb://businessdomain-auth
+          predicates:
+            - Path=/auth/**
+        # /user
+        - id: auth_user_routes
+          uri: lb://businessdomain-auth
+          predicates:
+            - Path=/user/**
+          filters:
+            AuthenticationFiltering
 
-            - id: auth_user_routes
-              uri: lb://businessdomain-auth
-              predicates:
-                - Path=/user/**
-              filters:
-                - AuthenticationFiltering
-      loadbalancer:
-        retry:
-          enabled: true
+        #/profile
+        - id: user_profile_routes
+          uri: lb://businessdomain-user
+          predicates:
+            - Path=/profile/**
+          filters:
+            AuthenticationFiltering
+    loadbalancer:
+      retry:
+        enabled: true
 
 server:
   port: 8080
