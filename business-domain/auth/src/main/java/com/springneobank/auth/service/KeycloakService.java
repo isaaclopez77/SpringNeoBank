@@ -7,9 +7,10 @@ package com.springneobank.auth.service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.springneobank.auth.common.OperationResult;
+
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.http.protocol.HTTP;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -142,8 +143,6 @@ public class KeycloakService {
 
         // Send request to Keycloak Users URL 
         ResponseEntity<Void> response = restTemplate.exchange(concreteUserUri, org.springframework.http.HttpMethod.PUT, request, Void.class);
-
-        log.info(response.toString());
     }
 
     /**
@@ -171,8 +170,46 @@ public class KeycloakService {
 
         // Send request to Keycloak Users URL 
         ResponseEntity<Void> response = restTemplate.exchange(concreteUserUri, org.springframework.http.HttpMethod.PUT, request, Void.class);
+    }
 
-        log.info(response.toString());
+    /**
+     * Update user data in Keycloak
+     * 
+     * @param token
+     * @param name
+     * @param lastName
+     * @param email
+     * @return
+     */
+    public OperationResult<String> updateUser(String token, String name, String lastName, String email){
+        try{
+            // Get superAdmin token
+            String adminToken = getAdminAccessToken();
+
+            // Set Authorization header
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(adminToken);
+
+            // Adding ID to user URI
+            String concreteUserUri = String.format("%s/%s", usersUri, getKeycloakIDByToken(token));
+
+            // Build payload
+            Map<String, Object> payload = Map.of(
+                                        "firstName", name,
+                                        "lastName", lastName,
+                                        "email", email
+                                        );
+            
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+
+            // Do request
+            ResponseEntity<Void> response = restTemplate.exchange(concreteUserUri, HttpMethod.PUT, entity, Void.class);
+
+            return OperationResult.ok("KC User updated");
+        } catch(Exception e) {
+            return OperationResult.fail(e.getMessage());
+        }
     }
 
     /**
@@ -212,8 +249,7 @@ public class KeycloakService {
      */
     public static UUID getKeycloakIDByAuthorizationHeader(String authHeader){
         String token = getTokenByAuthHeader(authHeader);
-        DecodedJWT jwt = JWT.decode(token);
-        return UUID.fromString(jwt.getSubject());
+        return getKeycloakIDByToken(token);
     }
 
     /**
@@ -224,6 +260,17 @@ public class KeycloakService {
      */
     public static String getTokenByAuthHeader(String authHeader){
         return authHeader.replace("Bearer", "").trim();
+    }
+
+    /**
+     * Extract KCID in token
+     * 
+     * @param token
+     * @return
+     */
+    public static UUID getKeycloakIDByToken(String token) {
+        DecodedJWT jwt = JWT.decode(token);
+        return UUID.fromString(jwt.getSubject());
     }
 
     /**

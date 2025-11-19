@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.springneobank.auth.common.OperationResult;
 import com.springneobank.auth.entities.KCUser;
 import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredEvent;
 import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredPublisher;
@@ -90,6 +91,21 @@ public class KCUserController {
         data.put("user_id", kcUser.getId());
 
         return ResponseEntity.ok(data);
+    }
+
+    @PostMapping("/update_kc_data")
+    public ResponseEntity<?> updateData(@RequestHeader("Authorization") String authHeader,
+                                        @RequestParam("name") String name,
+                                        @RequestParam("lastName") String lastName,
+                                        @RequestParam("email") String email) {
+
+        OperationResult<?> response = kcService.updateUser(KeycloakService.getTokenByAuthHeader(authHeader), name, lastName, email);
+
+        if(!response.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", response.getMessage()));
+        } else {
+            return ResponseEntity.ok(Map.of("message", response.getData()));
+        }
     }
 
     @GetMapping("/get_id_by_authorization")

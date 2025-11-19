@@ -1,12 +1,8 @@
 package com.springneobank.user.services;
 
 import java.util.Map;
-import java.util.UUID;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
 import com.springneobank.user.common.OperationResult;
 import com.springneobank.user.entities.User;
 import com.springneobank.user.feign.auth.AuthClient;
@@ -43,23 +39,35 @@ public class UserService {
      * @param email
      * @param name
      * @param lastName
-     * @param password
      * @param phone
      */
-    public OperationResult<String> updateProfile(String email, String name, String lastName, String password, String phone) {
+    public OperationResult<String> updateProfile(String email, String name, String lastName, String phone) {
         
         try{
             // Get KC + Auth data
             Map<String, Object> getKCDataResponse = authClient.getKCData();
 
-            // Get profile data
+            // Get KC  data
             Long user_id = Long.parseLong(getKCDataResponse.get("user_id").toString());
             User user = uRepository.findById(user_id).orElseThrow(() -> new RuntimeException("User not found in database"));
 
-            log.info(user.toString());
-
-            // @TODO Update
-
+            // Check if user keycloak data update is required
+            boolean kcDataUpdate = !getKCDataResponse.get("given_name").equals(name) || // @TODO don't use kc fieldNames, only in Auth Microservice
+                !getKCDataResponse.get("family_name").equals(lastName) ||
+                !getKCDataResponse.get("email").equals(email);
+            
+            if(kcDataUpdate) {
+                // Update KC Data
+                authClient.updateKCData(email, name, lastName);
+            }
+            
+            // Update profile data if needed
+            if(!user.getPhone().equals(phone)) {
+                user.setPhone(phone);
+                uRepository.save(user);
+            } else if(!kcDataUpdate) {
+                return OperationResult.ok("Nothing to update");
+            }
 
             return OperationResult.ok("User updated");
         } catch(Exception e) {

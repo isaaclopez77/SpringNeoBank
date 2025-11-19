@@ -24,11 +24,10 @@ public class UserProfileController {
                                     @RequestParam("email") String email,
                                     @RequestParam("name") String name,
                                     @RequestParam("lastName") String lastName,
-                                    @RequestParam("password") String password,
                                     @RequestParam("phone") String phone) {
 
 
-        OperationResult <?> result = uService.updateProfile(email, name, lastName, password, phone);
+        OperationResult <?> result = uService.updateProfile(email, name, lastName, phone);
 
         if(!result.isSuccess()) {
             return ResponseEntity.badRequest().body(result.getMessage());

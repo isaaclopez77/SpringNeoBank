@@ -15,11 +15,13 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name="kc_users")
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // for JPA
+@ToString
 public class KCUser {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
