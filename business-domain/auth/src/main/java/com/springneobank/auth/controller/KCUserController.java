@@ -108,6 +108,18 @@ public class KCUserController {
         }
     }
 
+    @PostMapping("/change_kc_password")
+    public ResponseEntity<?> changeKCPassword(@RequestHeader("Authorization") String authHeader, @RequestParam("password") String password) {
+
+        OperationResult<?> response = kcService.changePassword(KeycloakService.getTokenByAuthHeader(authHeader), password);
+
+        if(!response.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", response.getMessage()));
+        } else {
+            return ResponseEntity.ok(Map.of("message", response.getData()));
+        }
+    }
+
     @GetMapping("/get_id_by_authorization")
     public ResponseEntity<?> getIDByToken(@RequestHeader("Authorization") String authHeader) {
         // Get Keycloak ID in auth header

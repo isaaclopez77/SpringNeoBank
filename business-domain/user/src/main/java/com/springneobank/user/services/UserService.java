@@ -76,6 +76,16 @@ public class UserService {
         
     }
 
+    public OperationResult<String> changePassword(String password) {
+        try{
+            authClient.changeKCPassword(password);
+
+            return OperationResult.ok("Password changed");
+        } catch(Exception e) {
+            return OperationResult.fail(e.getMessage());
+        }
+    }
+
     /**
      * Deactivate: set status 0 in database
      * 
