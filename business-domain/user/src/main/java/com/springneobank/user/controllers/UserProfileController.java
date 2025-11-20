@@ -9,7 +9,6 @@ import com.springneobank.user.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 @RestController
 @RequestMapping("/profile")
@@ -20,7 +19,6 @@ public class UserProfileController {
 
     @PostMapping("/update")
     public ResponseEntity<?> updateProfile(
-                                    @RequestHeader("Authorization") String authHeader,
                                     @RequestParam("email") String email,
                                     @RequestParam("name") String name,
                                     @RequestParam("lastName") String lastName,
@@ -28,6 +26,18 @@ public class UserProfileController {
 
 
         OperationResult <?> result = uService.updateProfile(email, name, lastName, phone);
+
+        if(!result.isSuccess()) {
+            return ResponseEntity.badRequest().body(result.getMessage());
+        }
+
+        return ResponseEntity.ok(result.getData());
+    }
+
+    @PostMapping("/change_password")
+    public ResponseEntity<?> changePassword(@RequestParam("password") String password) {
+
+        OperationResult <?> result = uService.changePassword(password);
 
         if(!result.isSuccess()) {
             return ResponseEntity.badRequest().body(result.getMessage());

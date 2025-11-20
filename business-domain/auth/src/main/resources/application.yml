@@ -34,6 +34,7 @@ keycloak:
   users-uri: ${keycloak.base-uri}/admin/realms/${keycloak.realm}/users
   user-info-uri: ${keycloak.base-uri}/realms/${keycloak.realm}/protocol/openid-connect/userinfo
   jwk-set-uri: ${keycloak.base-uri}/realms/${keycloak.realm}/protocol/openid-connect/certs
+  change-password-uri: ${keycloak.users-uri}/*user*/reset-password
 
 #logging:
 #  level:

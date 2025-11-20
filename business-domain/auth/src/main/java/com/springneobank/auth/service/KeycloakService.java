@@ -44,6 +44,9 @@ public class KeycloakService {
     @Value("${keycloak.admin-token-uri}")
     private String adminTokenUri;
 
+    @Value("${keycloak.change-password-uri}")
+    private String changePasswordUri;
+
     @Value("${keycloak.client-id}")
     private String clientId;
 
@@ -205,6 +208,37 @@ public class KeycloakService {
 
             // Do request
             ResponseEntity<Void> response = restTemplate.exchange(concreteUserUri, HttpMethod.PUT, entity, Void.class);
+
+            return OperationResult.ok("KC User updated");
+        } catch(Exception e) {
+            return OperationResult.fail(e.getMessage());
+        }
+    }
+
+    public OperationResult<String> changePassword(String token, String password){
+        try{
+            // Get superAdmin token
+            String adminToken = getAdminAccessToken();
+
+            // Set Authorization header
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(adminToken);
+
+            // Adding ID to change password URI
+            String changePasswordURIBuilded = changePasswordUri.replace("*user*", getKeycloakIDByToken(token).toString());
+
+            // Build payload
+            Map<String, Object> payload = Map.of(
+                                        "type", "password",
+                                        "value", password,
+                                        "temporary", false
+                                        );
+            
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+
+            // Do request
+            ResponseEntity<Void> response = restTemplate.exchange(changePasswordURIBuilded, HttpMethod.PUT, entity, Void.class);
 
             return OperationResult.ok("KC User updated");
         } catch(Exception e) {
