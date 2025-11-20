@@ -25,4 +25,7 @@ public interface AuthClient {
 
     @PostMapping("/user/update_kc_data")
     Map<String, Object> updateKCData(@RequestParam("email") String email, @RequestParam("name") String name, @RequestParam("lastName") String lastName);
+
+    @PostMapping("/user/change_kc_password")
+    Map<String, Object> changeKCPassword(@RequestParam("password") String password);
 }
