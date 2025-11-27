@@ -20,11 +20,17 @@ import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredEvent;
 import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredPublisher;
 import com.springneobank.auth.service.KCUserService;
 import com.springneobank.auth.service.KeycloakService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.web.bind.annotation.RequestParam;
 
 
 @RestController
 @RequestMapping("/user")
+@Tag(name = "KC User API")
 public class KCUserController {
 
     @Autowired
@@ -37,6 +43,7 @@ public class KCUserController {
     private KeycloakService kcService;
 
     @PostMapping("/unregister")
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<?> unregister(@RequestHeader("Authorization") String authHeader) {
 
         // Get Keycloak ID in auth header
@@ -66,6 +73,7 @@ public class KCUserController {
     }
 
     @GetMapping("/roles")
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<?> getRoles(@RequestHeader("Authorization") String authHeader) throws Exception {
         DecodedJWT jwt = JWT.decode(authHeader.replace("Bearer", "").trim());
 
@@ -80,6 +88,7 @@ public class KCUserController {
     }
 
     @GetMapping("/get_kc_data")
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<?> getData(@RequestHeader("Authorization") String authHeader) {
         // Get KC Data
         Map<String, Object> data = kcService.getUserData(KeycloakService.getTokenByAuthHeader(authHeader));
@@ -94,6 +103,7 @@ public class KCUserController {
     }
 
     @PostMapping("/update_kc_data")
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<?> updateData(@RequestHeader("Authorization") String authHeader,
                                         @RequestParam("name") String name,
                                         @RequestParam("lastName") String lastName,
@@ -109,6 +119,7 @@ public class KCUserController {
     }
 
     @PostMapping("/change_kc_password")
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<?> changeKCPassword(@RequestHeader("Authorization") String authHeader, @RequestParam("password") String password) {
 
         OperationResult<?> response = kcService.changePassword(KeycloakService.getTokenByAuthHeader(authHeader), password);
@@ -121,6 +132,7 @@ public class KCUserController {
     }
 
     @GetMapping("/get_id_by_authorization")
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<?> getIDByToken(@RequestHeader("Authorization") String authHeader) {
         // Get Keycloak ID in auth header
         UUID kcID = KeycloakService.getKeycloakIDByAuthorizationHeader(authHeader);
