@@ -25,12 +25,31 @@ spring:
             - Path=/profile/**
           filters:
             AuthenticationFiltering
+
+        # Keycloak
+        - id: keycloak
+          uri: http://localhost:8091
+          predicates:
+            - Path=/realms/**
+
+
     loadbalancer:
       retry:
         enabled: true
 
 server:
   port: 8080
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    config-url: /v3/api-docs/swagger-config
+    urls:
+      - name: Auth
+        url: /docs/auth
+      - name: User
+        url: /docs/user
 
 eureka:
   client:

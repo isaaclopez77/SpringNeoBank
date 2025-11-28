@@ -6,6 +6,9 @@
 package com.springneobank.auth.controller;
 
 import com.springneobank.auth.service.KeycloakService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.auth0.jwk.Jwk;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -27,6 +30,7 @@ import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Auth API")
 public class AuthController {
 
     @Autowired
