@@ -25,6 +25,14 @@ spring:
             - Path=/profile/**
           filters:
             AuthenticationFiltering
+
+        # Keycloak
+        - id: keycloak
+          uri: http://localhost:8091
+          predicates:
+            - Path=/realms/**
+
+
     loadbalancer:
       retry:
         enabled: true
