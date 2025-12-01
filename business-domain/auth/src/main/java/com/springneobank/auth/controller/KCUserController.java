@@ -1,7 +1,5 @@
 package com.springneobank.auth.controller;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,17 +7,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.springneobank.auth.common.OperationResult;
 import com.springneobank.auth.common.Utils;
 import com.springneobank.auth.entities.KCUser;
-import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredEvent;
-import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredPublisher;
-import com.springneobank.auth.service.KCUserService;
+import com.springneobank.auth.service.AuthService;
+import com.springneobank.auth.service.JwtService;
 import com.springneobank.auth.service.KeycloakService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,10 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class KCUserController {
 
     @Autowired
-    private UserUnregisteredPublisher unrEventPublisher;
-
-    @Autowired
-    private KCUserService databaseService;
+    private AuthService authService;
 
     @Autowired
     private KeycloakService kcService;
@@ -47,49 +38,34 @@ public class KCUserController {
     @Autowired
     private HttpServletRequest request;
 
+    @Autowired
+    private JwtService jwtService;
+
     @PostMapping("/unregister")
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<?> unregister() {
 
-        // Get Keycloak ID in auth header
-        UUID kcID = KeycloakService.getKeycloakIDByAuthorizationHeader(Utils.getAuthorizationHeader(request));
+        OperationResult <?> result = authService.unregisterUser(request);
 
-        KCUser kcUser = databaseService.getUserByKCID(kcID);
-
-        if(kcUser != null) {
-            // Deactivate in keycloak
-            kcService.deactivateUser(kcID);
-
-            // In database
-            databaseService.deactivateUser(kcUser);
-            
-            // Unregister Rabbit event
-            UserUnregisteredEvent event = UserUnregisteredEvent.builder()
-                .userId(kcUser.getId())
-                .build();
-
-            unrEventPublisher.publish(event);
-        } else {
-            return ResponseEntity.notFound().build();
+        if(!result.isSuccess()) {
+            return ResponseEntity.internalServerError().body(Map.of("message", result.getMessage()));
         }
-        
-        return ResponseEntity.status(HttpStatus.OK).build();
+
+        return ResponseEntity.ok(Map.of("message", result.getData()));
 
     }
 
     @GetMapping("/roles")
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<?> getRoles() throws Exception {
-        DecodedJWT jwt = JWT.decode(Utils.getAuthorizationHeader(request).replace("Bearer", "").trim());
 
-        // Check JWT role is correct
-        List<String> roles = ((List) jwt.getClaim("realm_access").asMap().get("roles"));
+       OperationResult <?> result = jwtService.getRoles(Utils.getAuthorizationHeader(request));
 
-        HashMap HashMap = new HashMap();
-        for (String str : roles) {
-            HashMap.put(str, str.length());
+        if(!result.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", result.getMessage()));
         }
-        return ResponseEntity.ok(HashMap);
+
+        return ResponseEntity.ok(result.getData());
     }
 
     @GetMapping("/get_kc_data")
@@ -99,7 +75,7 @@ public class KCUserController {
         Map<String, Object> data = kcService.getUserData(KeycloakService.getTokenByAuthHeader(Utils.getAuthorizationHeader(request)));
 
         // Get User By KCID
-        KCUser kcUser = databaseService.getUserByKCID(UUID.fromString(data.get("sub").toString()));
+        KCUser kcUser = authService.getUserByKCID(UUID.fromString(data.get("sub").toString()));
 
         // Insert user id
         data.put("user_id", kcUser.getId());
@@ -116,7 +92,7 @@ public class KCUserController {
         OperationResult<?> response = kcService.updateUser(KeycloakService.getTokenByAuthHeader(Utils.getAuthorizationHeader(request)), name, lastName, email);
 
         if(!response.isSuccess()) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", response.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("message", response.getMessage()));
         } else {
             return ResponseEntity.ok(Map.of("message", response.getData()));
         }
@@ -129,7 +105,7 @@ public class KCUserController {
         OperationResult<?> response = kcService.changePassword(KeycloakService.getTokenByAuthHeader(Utils.getAuthorizationHeader(request)), password);
 
         if(!response.isSuccess()) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", response.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("message", response.getMessage()));
         } else {
             return ResponseEntity.ok(Map.of("message", response.getData()));
         }
@@ -141,7 +117,7 @@ public class KCUserController {
         // Get Keycloak ID in auth header
         UUID kcID = KeycloakService.getKeycloakIDByAuthorizationHeader(Utils.getAuthorizationHeader(request));
 
-        KCUser kcUser = databaseService.getUserByKCID(kcID);
+        KCUser kcUser = authService.getUserByKCID(kcID);
 
         if(kcUser != null) {
             return ResponseEntity.ok(kcUser.getId());
@@ -149,6 +125,4 @@ public class KCUserController {
             return ResponseEntity.notFound().build();
         }
     }
-    
-    
 }
