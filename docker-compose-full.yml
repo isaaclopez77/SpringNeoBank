@@ -143,9 +143,11 @@ services:
     container_name: api_gateway
     environment:
       - EUREKA_SERVER=http://eureka-server:8761/eureka
+      - KEYCLOAK_SERVER=http://keycloak-server:8080
     depends_on:
       - maven-base
       - eureka-server
+      - keycloak_server
     ports:
       - "8080:8080"
 

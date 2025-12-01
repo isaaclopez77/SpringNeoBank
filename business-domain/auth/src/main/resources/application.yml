@@ -23,6 +23,10 @@ spring:
         multiplier: 1.5
         max-interval: 10000
 
+springdoc:
+  swagger-ui:
+    enabled: false
+
 keycloak:
   realm: SpringNeoBank
   certs-id: ${KC_REALM_ID}

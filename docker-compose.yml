@@ -132,11 +132,13 @@ services:
     command: ["java", "-jar", "/app/api-gateway.jar"]
     environment:
       EUREKA_SERVER: http://eureka-server:8761/eureka
+      KEYCLOAK_SERVER: http://keycloak-server:8080
     ports:
       - "8080:8080"
     depends_on:
       - eureka-server
       - config-server
+      - keycloak_server
 
 volumes:
   pgdata:
