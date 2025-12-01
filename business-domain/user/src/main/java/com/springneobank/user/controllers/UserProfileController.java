@@ -22,8 +22,7 @@ public class UserProfileController {
     private UserService uService;
 
     @PostMapping("/update")
-    public ResponseEntity<?> updateProfile(
-                                    @RequestParam("email") String email,
+    public ResponseEntity<?> updateProfile(@RequestParam("email") String email,
                                     @RequestParam("name") String name,
                                     @RequestParam("lastName") String lastName,
                                     @RequestParam("phone") String phone) {
