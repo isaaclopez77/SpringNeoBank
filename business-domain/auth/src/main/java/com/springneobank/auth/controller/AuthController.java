@@ -8,12 +8,14 @@ package com.springneobank.auth.controller;
 import com.springneobank.auth.service.KeycloakService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.auth0.jwk.Jwk;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.springneobank.auth.common.Utils;
 import com.springneobank.auth.entities.KCUser;
 import com.springneobank.auth.messaging.UserRegistered.UserRegisteredEvent;
 import com.springneobank.auth.messaging.UserRegistered.UserRegisteredPublisher;
@@ -44,6 +46,9 @@ public class AuthController {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private HttpServletRequest request;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(
@@ -76,9 +81,13 @@ public class AuthController {
     }
 
     @GetMapping("/validate_token")
-    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) throws Exception {
-
+    public ResponseEntity<?> validateToken() throws Exception {
         try{
+            String authHeader = Utils.getAuthorizationHeader(request);
+            if(authHeader == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authorization header not found");
+            }
+
             String token = authHeader.replace("Bearer", "").trim();
             DecodedJWT jwt = JWT.decode(token);
             Jwk jwk = jwtService.getJwk();
