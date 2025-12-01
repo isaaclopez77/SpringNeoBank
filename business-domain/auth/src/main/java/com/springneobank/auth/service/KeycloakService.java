@@ -240,7 +240,7 @@ public class KeycloakService {
             // Do request
             ResponseEntity<Void> response = restTemplate.exchange(changePasswordURIBuilded, HttpMethod.PUT, entity, Void.class);
 
-            return OperationResult.ok("KC User updated");
+            return OperationResult.ok("Password changed");
         } catch(Exception e) {
             return OperationResult.fail(e.getMessage());
         }

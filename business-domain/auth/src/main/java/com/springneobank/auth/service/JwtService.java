@@ -6,11 +6,24 @@
 package com.springneobank.auth.service;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.UrlJwkProvider;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.springneobank.auth.common.OperationResult;
+import com.springneobank.auth.common.Utils;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.net.URL;
+import java.security.interfaces.RSAPublicKey;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 
 @Service
 public class JwtService {
@@ -27,6 +40,63 @@ public class JwtService {
         UrlJwkProvider urlJwkProvider = new UrlJwkProvider(url);
         Jwk get = urlJwkProvider.get(certsId.trim());  
         return get;
+    }
+
+    /**
+     * Validate token function
+     * 
+     * @param authHeader -- Bearer *token*
+     * @return
+     */
+    public OperationResult<String> validateToken(String authHeader) {
+        try{
+            if(authHeader == null) {
+                return OperationResult.fail("Authorization header not found");
+            }
+
+            String token = authHeader.replace("Bearer", "").trim();
+            DecodedJWT jwt = JWT.decode(token);
+            Jwk jwk = getJwk();
+
+            // Check JWT is valid
+            Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
+            algorithm.verify(jwt);
+
+            // Check JWT is still active
+            Date expiryDate = jwt.getExpiresAt();
+            if (expiryDate.before(new Date())) {
+                return OperationResult.fail("Token expired");
+            }
+            return OperationResult.ok("Token valid");
+        } catch(JWTVerificationException e) {
+            return OperationResult.fail("Invalid token signature");
+        } catch(Exception e) {
+            return OperationResult.fail("Token validation failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get roles from authorization header
+     * 
+     * @param authHeader  -- Bearer *token*
+     * @return
+     */
+    public OperationResult<HashMap<String, Integer>> getRoles(String authHeader) {
+        try{
+            DecodedJWT jwt = JWT.decode(authHeader.replace("Bearer", "").trim());
+
+            // Check JWT role is correct
+            List<String> roles = ((List) jwt.getClaim("realm_access").asMap().get("roles"));
+
+            HashMap<String, Integer> hashMap = new HashMap();
+            for (String str : roles) {
+                hashMap.put(str, str.length());
+            }
+
+            return OperationResult.ok(hashMap);
+        } catch(Exception e) {
+            return OperationResult.fail(e.getMessage());
+        }
     }
 }
 

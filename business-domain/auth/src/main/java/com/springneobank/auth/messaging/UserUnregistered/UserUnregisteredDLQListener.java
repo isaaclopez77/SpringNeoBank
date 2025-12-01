@@ -8,7 +8,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import com.springneobank.auth.service.KeycloakService;
 import com.springneobank.auth.entities.KCUser;
 import com.springneobank.auth.messaging.RabbitConfig;
-import com.springneobank.auth.service.KCUserService;
+import com.springneobank.auth.service.AuthService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserUnregisteredDLQListener {
 
     @Autowired
-    private KCUserService KCUService;
+    private AuthService KCUService;
 
     @Autowired
     private KeycloakService kcService;
