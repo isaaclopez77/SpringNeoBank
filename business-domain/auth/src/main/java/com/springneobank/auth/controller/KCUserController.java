@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.springneobank.auth.common.OperationResult;
+import com.springneobank.auth.common.Utils;
 import com.springneobank.auth.entities.KCUser;
 import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredEvent;
 import com.springneobank.auth.messaging.UserUnregistered.UserUnregisteredPublisher;
@@ -24,6 +25,7 @@ import com.springneobank.auth.service.KeycloakService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -42,12 +44,15 @@ public class KCUserController {
     @Autowired
     private KeycloakService kcService;
 
+    @Autowired
+    private HttpServletRequest request;
+
     @PostMapping("/unregister")
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<?> unregister(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> unregister() {
 
         // Get Keycloak ID in auth header
-        UUID kcID = KeycloakService.getKeycloakIDByAuthorizationHeader(authHeader);
+        UUID kcID = KeycloakService.getKeycloakIDByAuthorizationHeader(Utils.getAuthorizationHeader(request));
 
         KCUser kcUser = databaseService.getUserByKCID(kcID);
 
@@ -74,8 +79,8 @@ public class KCUserController {
 
     @GetMapping("/roles")
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<?> getRoles(@RequestHeader("Authorization") String authHeader) throws Exception {
-        DecodedJWT jwt = JWT.decode(authHeader.replace("Bearer", "").trim());
+    public ResponseEntity<?> getRoles() throws Exception {
+        DecodedJWT jwt = JWT.decode(Utils.getAuthorizationHeader(request).replace("Bearer", "").trim());
 
         // Check JWT role is correct
         List<String> roles = ((List) jwt.getClaim("realm_access").asMap().get("roles"));
@@ -89,9 +94,9 @@ public class KCUserController {
 
     @GetMapping("/get_kc_data")
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<?> getData(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> getData() {
         // Get KC Data
-        Map<String, Object> data = kcService.getUserData(KeycloakService.getTokenByAuthHeader(authHeader));
+        Map<String, Object> data = kcService.getUserData(KeycloakService.getTokenByAuthHeader(Utils.getAuthorizationHeader(request)));
 
         // Get User By KCID
         KCUser kcUser = databaseService.getUserByKCID(UUID.fromString(data.get("sub").toString()));
@@ -104,12 +109,11 @@ public class KCUserController {
 
     @PostMapping("/update_kc_data")
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<?> updateData(@RequestHeader("Authorization") String authHeader,
-                                        @RequestParam("name") String name,
+    public ResponseEntity<?> updateData(@RequestParam("name") String name,
                                         @RequestParam("lastName") String lastName,
                                         @RequestParam("email") String email) {
 
-        OperationResult<?> response = kcService.updateUser(KeycloakService.getTokenByAuthHeader(authHeader), name, lastName, email);
+        OperationResult<?> response = kcService.updateUser(KeycloakService.getTokenByAuthHeader(Utils.getAuthorizationHeader(request)), name, lastName, email);
 
         if(!response.isSuccess()) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", response.getMessage()));
@@ -120,9 +124,9 @@ public class KCUserController {
 
     @PostMapping("/change_kc_password")
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<?> changeKCPassword(@RequestHeader("Authorization") String authHeader, @RequestParam("password") String password) {
+    public ResponseEntity<?> changeKCPassword(@RequestParam("password") String password) {
 
-        OperationResult<?> response = kcService.changePassword(KeycloakService.getTokenByAuthHeader(authHeader), password);
+        OperationResult<?> response = kcService.changePassword(KeycloakService.getTokenByAuthHeader(Utils.getAuthorizationHeader(request)), password);
 
         if(!response.isSuccess()) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", response.getMessage()));
@@ -133,9 +137,9 @@ public class KCUserController {
 
     @GetMapping("/get_id_by_authorization")
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<?> getIDByToken(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> getIDByToken() {
         // Get Keycloak ID in auth header
-        UUID kcID = KeycloakService.getKeycloakIDByAuthorizationHeader(authHeader);
+        UUID kcID = KeycloakService.getKeycloakIDByAuthorizationHeader(Utils.getAuthorizationHeader(request));
 
         KCUser kcUser = databaseService.getUserByKCID(kcID);
 

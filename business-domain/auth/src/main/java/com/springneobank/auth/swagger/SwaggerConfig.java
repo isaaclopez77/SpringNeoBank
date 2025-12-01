@@ -24,6 +24,12 @@ public class SwaggerConfig {
     @Value("${keycloak.realm}")
     private String realmName;
 
+    /**
+     * Custom definition
+     * Insert Authorization button
+     * 
+     * @return
+     */
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
@@ -36,6 +42,15 @@ public class SwaggerConfig {
                 .addServersItem(new io.swagger.v3.oas.models.servers.Server()
                         .url("/")
                         .description("Self API Server"));
+    }
+
+    @Bean
+    public OpenApiCustomizer globalSecurityCustomizer() {
+        return openApi -> openApi.getPaths().values().forEach(pathItem ->
+                pathItem.readOperations().forEach(operation ->
+                        operation.addSecurityItem(new io.swagger.v3.oas.models.security.SecurityRequirement().addList("bearerAuth"))
+                )
+        );
     }
 
     @Bean
