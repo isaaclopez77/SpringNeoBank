@@ -40,22 +40,37 @@ services:
       - pgdata_user:/var/lib/postgresql/data
 
   # ===============================
+  # PostgreSQL para ACCOUNT service
+  # ===============================
+  postgres_account:
+    image: postgres:15
+    container_name: postgres_account
+    environment:
+      POSTGRES_DB: account
+      POSTGRES_USER: ${DB_ACCOUNT_USER}
+      POSTGRES_PASSWORD: ${DB_ACCOUNT_PASS}
+    ports:
+      - "5436:5432"
+    volumes:
+      - pgdata_account:/var/lib/postgresql/data
+
+  # ===============================
   # PostgreSQL for Keycloak Server
   # ===============================
   postgres_keycloak:
     image: postgres:15
     container_name: postgres_keycloak
     environment:
-      POSTGRES_DB: keycloack
-      POSTGRES_USER: ${DB_KEYCLOACK_USER}
-      POSTGRES_PASSWORD: ${DB_KEYCLOACK_PASS}
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: ${DB_KEYCLOAK_USER}
+      POSTGRES_PASSWORD: ${DB_KEYCLOAK_PASS}
     ports:
       - "5434:5432"
     volumes:
       - pgdata_keycloak:/var/lib/postgresql/data
 
   # ===============================
-  # KEYCLOACK server
+  # KEYCLOAK server
   # ===============================
   keycloak_server:
     image: quay.io/keycloak/keycloak:23.0.3
@@ -68,9 +83,13 @@ services:
       KC_DB: postgres
       KC_DB_URL_HOST: postgres_keycloak
       KC_DB_URL_PORT: 5432
-      KC_DB_URL_DATABASE: keycloack
-      KC_DB_USERNAME: ${DB_KEYCLOACK_USER}
-      KC_DB_PASSWORD: ${DB_KEYCLOACK_PASS}
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: ${DB_KEYCLOAK_USER}
+      KC_DB_PASSWORD: ${DB_KEYCLOAK_PASS}
+      # KC URL in api-gateway
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT: false
       KC_PROXY: edge
     ports:
       - "8091:8080"
@@ -144,6 +163,7 @@ services:
     environment:
       - EUREKA_SERVER=http://eureka-server:8761/eureka
       - KEYCLOAK_SERVER=http://keycloak-server:8080
+      - KEYCLOAK_JWKS_URL=http://api-gateway:8080/realms/SpringNeoBank/protocol/openid-connect/certs
     depends_on:
       - maven-base
       - eureka-server
@@ -168,7 +188,7 @@ services:
       - DB_NAME=auth
       - DB_AUTH_USER=${DB_AUTH_USER}
       - DB_AUTH_PASS=${DB_AUTH_PASS}
-      - KC_SERVER=http://keycloak_server:8080/
+      - KC_SERVER=http://api_gateway:8080
       - KC_REALM_ID=oss1hknLoJugUGEdVXIOxM76RgLYswx9K0Zs236Z414
       - KC_CLIENT_ADMIN_ID=auth
       - KC_CLIENT_ADMIN_SECRET=DUxP5WZYGlnLRXz7xhKzW2IpbrVk4EdD
@@ -183,6 +203,8 @@ services:
       - maven-base
       - eureka-server
       - keycloak_server
+    ports:
+      - "8081:8081"
 
   # ===============================
   # Service USER
@@ -208,10 +230,40 @@ services:
       - config-server
       - maven-base
       - eureka-server
+    ports:
+      - "8082:8082"
+
+  # ===============================
+  # Service ACCOUNT
+  # ===============================
+  account:
+    build:
+      context: ./business-domain/account
+      dockerfile: Dockerfile
+      args:
+        MAVEN_BASE_IMAGE: springneobank-maven
+    container_name: account_service
+    environment:
+      - DB_HOST=jdbc:postgresql://postgres_account:5432
+      - DB_NAME=account
+      - DB_ACCOUNT_USER=${DB_ACCOUNT_USER}
+      - DB_ACCOUNT_PASS=${DB_ACCOUNT_PASS}
+      - EUREKA_SERVER=http://eureka-server:8761/eureka
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_USERNAME=${RABBIT_USERNAME}
+      - RABBIT_PASSWORD=${RABBIT_PASSWORD}
+    depends_on:
+      - postgres_account
+      - config-server
+      - maven-base
+      - eureka-server
+    ports:
+      - "8083:8083"
 
 volumes:
   pgdata:
   pgdata_keycloak:
   pgdata_user:
+  pgdata_account:
   rabbitmq_data:
 

@@ -4,7 +4,7 @@ FROM ${MAVEN_BASE_IMAGE} AS build
 
 WORKDIR /app
 
-# Copiar únicamente el microservicio auth
+# Copiar únicamente el microservicio
 COPY pom.xml ./pom.xml
 COPY src ./src
 COPY wait-for-config.sh ./wait-for-config.sh

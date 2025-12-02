@@ -31,6 +31,21 @@ services:
       - pgdata_user:/var/lib/postgresql/data
 
   # ===============================
+  # PostgreSQL para ACCOUNT service
+  # ===============================
+  postgres_account:
+    image: postgres:15
+    container_name: postgres_account
+    environment:
+      POSTGRES_DB: account
+      POSTGRES_USER: ${DB_ACCOUNT_USER}
+      POSTGRES_PASSWORD: ${DB_ACCOUNT_PASS}
+    ports:
+      - "5436:5432"
+    volumes:
+      - pgdata_account:/var/lib/postgresql/data
+
+  # ===============================
   # PostgreSQL para KEYCLOAK
   # ===============================
   postgres_keycloak:
@@ -62,6 +77,10 @@ services:
       KC_DB_URL_DATABASE: keycloak
       KC_DB_USERNAME: ${DB_KEYCLOAK_USER}
       KC_DB_PASSWORD: ${DB_KEYCLOAK_PASS}
+      # KC URL in api-gateway
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT: false
       KC_PROXY: edge
     ports:
       - "8091:8080"
@@ -133,6 +152,7 @@ services:
     environment:
       EUREKA_SERVER: http://eureka-server:8761/eureka
       KEYCLOAK_SERVER: http://keycloak-server:8080
+      KEYCLOAK_JWKS_URL: http://api-gateway:8080/realms/SpringNeoBank/protocol/openid-connect/certs
     ports:
       - "8080:8080"
     depends_on:
@@ -143,5 +163,6 @@ services:
 volumes:
   pgdata:
   pgdata_user:
+  pgdata_account:
   pgdata_keycloak:
   rabbitmq_data:

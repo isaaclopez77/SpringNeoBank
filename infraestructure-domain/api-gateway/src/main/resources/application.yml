@@ -27,10 +27,14 @@ spring:
             AuthenticationFiltering
 
         # Keycloak
-        - id: keycloak
+        - id: keycloak_realms
           uri: ${KEYCLOAK_SERVER:http://localhost:8091}
           predicates:
-            - Path=/realms/**, /admin/realms/**
+            - Path=/realms/**
+        - id: keycloak_admin
+          uri: ${KEYCLOAK_SERVER:http://localhost:8091}
+          predicates:
+            - Path=/admin/realms/**
 
 
     loadbalancer:
