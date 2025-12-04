@@ -26,6 +26,14 @@ spring:
           filters:
             AuthenticationFiltering
 
+        #/account
+        - id: account_account_routes
+          uri: lb://businessdomain-account
+          predicates:
+            - Path=/account/**
+          filters:
+            AuthenticationFiltering
+
         # Keycloak
         - id: keycloak_realms
           uri: ${KEYCLOAK_SERVER:http://localhost:8091}
@@ -54,6 +62,8 @@ springdoc:
         url: /docs/auth
       - name: User
         url: /docs/user
+      - name: Account
+        url: /docs/account
 
 eureka:
   client:
