@@ -19,4 +19,7 @@ public interface AccountRepository extends JpaRepository<Account, Long>{
     Optional<Account> findByUserIdAndIbanAndId(Long user_id, String iban, Long id);
 
     List<Account> findByUserIdAndStatusTrue(Long userId);
+
+    @Query("select a from Account a where a.type.id = 2")
+    List<Account> findSavingsAccounts();
 }

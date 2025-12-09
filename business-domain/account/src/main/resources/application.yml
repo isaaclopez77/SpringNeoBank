@@ -60,3 +60,9 @@ management:
     web:
       exposure:
         include: "*"
+
+logging:
+  lever:
+    org:
+      springframework:
+        scheduling: DEBUG
