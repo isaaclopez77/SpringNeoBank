@@ -34,6 +34,14 @@ spring:
           filters:
             AuthenticationFiltering
 
+        #/transaction
+        - id: transaction_transaction_routes
+          uri: lb://businessdomain-transaction
+          predicates:
+            - Path=/transaction/**
+          filters:
+            AuthenticationFiltering
+
         # Keycloak
         - id: keycloak_realms
           uri: ${KEYCLOAK_SERVER:http://localhost:8091}
@@ -64,6 +72,8 @@ springdoc:
         url: /docs/user
       - name: Account
         url: /docs/account
+      - name: Transaction
+        url: /docs/transaction
 
 eureka:
   client:

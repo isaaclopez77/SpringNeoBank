@@ -47,9 +47,9 @@ public class AccountController {
         return ResponseEntity.ok(Map.of("message", result.getData()));
     }
 
-    @GetMapping("/get_user_accounts")
+    @GetMapping("/get_my_accounts")
     public ResponseEntity<?> getUserAccounts() {
-        OperationResult<?> result = accountService.getAccounts();
+        OperationResult<?> result = accountService.getLoggedUserAccounts();
 
         if(!result.isSuccess()) {
             return ResponseEntity.internalServerError().body(Map.of("message", result.getMessage()));
@@ -57,5 +57,28 @@ public class AccountController {
 
         return ResponseEntity.ok(Map.of("message", result.getData()));
     }
+
+    @GetMapping("/get_user_accounts/{user_id}")
+    public ResponseEntity<?> getAccountsByUser(@PathVariable("user_id") Long userID) {
+         OperationResult<?> result = accountService.getAccountsByUser(userID);
+
+        if(!result.isSuccess()) {
+            return ResponseEntity.internalServerError().body(Map.of("message", result.getMessage()));
+        }
+
+        return ResponseEntity.ok(Map.of("message", result.getData()));
+    }
+
+    @GetMapping("/get_account/{account_id}")
+    public ResponseEntity<?> getAccount(@PathVariable("account_id") Long accountId) {
+         OperationResult<?> result = accountService.getAccount(accountId);
+
+        if(!result.isSuccess()) {
+            return ResponseEntity.internalServerError().body(Map.of("message", result.getMessage()));
+        }
+
+        return ResponseEntity.ok(Map.of("message", result.getData()));
+    }
+    
     
 }
