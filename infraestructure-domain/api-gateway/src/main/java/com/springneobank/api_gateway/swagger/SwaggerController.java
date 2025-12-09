@@ -34,4 +34,13 @@ public class SwaggerController {
                 .retrieve()
                 .bodyToMono(String.class);
     }
+
+    @GetMapping("/account")
+    public Mono<String> account() {
+        return webClient.build()
+                .get()
+                .uri("http://businessdomain-account/v3/api-docs")
+                .retrieve()
+                .bodyToMono(String.class);
+    }
 }
