@@ -55,6 +55,21 @@ services:
       - pgdata_account:/var/lib/postgresql/data
 
   # ===============================
+  # PostgreSQL para TRANSACTION service
+  # ===============================
+  postgres_transaction:
+    image: postgres:15
+    container_name: postgres_transaction
+    environment:
+      POSTGRES_DB: transaction
+      POSTGRES_USER: ${DB_TRANSACTION_USER}
+      POSTGRES_PASSWORD: ${DB_TRANSACTION_PASS}
+    ports:
+      - "5437:5432"
+    volumes:
+      - pgdata_transaction:/var/lib/postgresql/data
+
+  # ===============================
   # PostgreSQL for Keycloak Server
   # ===============================
   postgres_keycloak:
@@ -260,10 +275,37 @@ services:
     ports:
       - "8083:8083"
 
+  # ===============================
+  # Service TRANSACTION
+  # ===============================
+  transaction:
+    build:
+      context: ./business-domain/transaction
+      dockerfile: Dockerfile
+      args:
+        MAVEN_BASE_IMAGE: springneobank-maven
+    container_name: transaction_service
+    environment:
+      - DB_HOST=jdbc:postgresql://postgres_transaction:5432
+      - DB_NAME=transaction
+      - DB_TRANSACTION_USER=${DB_TRANSACTION_USER}
+      - DB_TRANSACTION_PASS=${DB_TRANSACTION_PASS}
+      - EUREKA_SERVER=http://eureka-server:8761/eureka
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_USERNAME=${RABBIT_USERNAME}
+      - RABBIT_PASSWORD=${RABBIT_PASSWORD}
+    depends_on:
+      - postgres_transaction
+      - config-server
+      - maven-base
+      - eureka-server
+    ports:
+      - "8084:8084"
+
 volumes:
   pgdata:
   pgdata_keycloak:
   pgdata_user:
   pgdata_account:
+  pgdata_transaction:
   rabbitmq_data:
-

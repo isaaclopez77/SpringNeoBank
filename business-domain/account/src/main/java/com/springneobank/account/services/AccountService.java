@@ -3,6 +3,7 @@ package com.springneobank.account.services;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -54,7 +55,12 @@ public class AccountService {
         }
     }
 
-    public OperationResult<List<Account>> getAccounts() {
+    /**
+     * Get accounts of logged user
+     * 
+     * @return
+     */
+    public OperationResult<List<Account>> getLoggedUserAccounts() {
         try{
             // Get user ID making a request to Auth microservice
             Long userID = getUserIDRequest();
@@ -66,6 +72,41 @@ public class AccountService {
             return OperationResult.fail(e.getMessage());
         }
     }
+
+    /**
+     * Get accounts by user id
+     * 
+     * @param userID
+     * @return
+     */
+    public OperationResult<List<Account>> getAccountsByUser(Long userID) {
+        try{
+            List<Account> accounts = accountRepository.findByUserIdAndStatusTrue(userID);
+
+            return OperationResult.ok(accounts);
+        } catch(Exception e) {
+            return OperationResult.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * Get account by id
+     * 
+     * @param accountId
+     * @return
+     */
+    public OperationResult<Account> getAccount(Long accountId) {
+        try{
+            Optional<Account> optAccount = accountRepository.findById(accountId);
+
+            Account account = optAccount.orElseThrow(() -> new RuntimeException("Cuenta no encontrada"));
+
+            return OperationResult.ok(account);
+        } catch(Exception e) {
+            return OperationResult.fail(e.getMessage());
+        }
+    }
+
 
     /**
      * Change account status field

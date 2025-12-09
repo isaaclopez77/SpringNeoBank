@@ -74,5 +74,6 @@
     <module>auth</module>
     <module>user</module>
     <module>account</module>
+    <module>transaction</module>
   </modules>
 </project>
