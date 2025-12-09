@@ -43,4 +43,13 @@ public class SwaggerController {
                 .retrieve()
                 .bodyToMono(String.class);
     }
+
+    @GetMapping("/transaction")
+    public Mono<String> transaction() {
+        return webClient.build()
+                .get()
+                .uri("http://businessdomain-transaction/v3/api-docs")
+                .retrieve()
+                .bodyToMono(String.class);
+    }
 }

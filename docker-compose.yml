@@ -46,6 +46,21 @@ services:
       - pgdata_account:/var/lib/postgresql/data
 
   # ===============================
+  # PostgreSQL para TRANSACTION service
+  # ===============================
+  postgres_transaction:
+    image: postgres:15
+    container_name: postgres_transaction
+    environment:
+      POSTGRES_DB: transaction
+      POSTGRES_USER: ${DB_TRANSACTION_USER}
+      POSTGRES_PASSWORD: ${DB_TRANSACTION_PASS}
+    ports:
+      - "5437:5432"
+    volumes:
+      - pgdata_transaction:/var/lib/postgresql/data
+
+  # ===============================
   # PostgreSQL para KEYCLOAK
   # ===============================
   postgres_keycloak:
@@ -165,4 +180,5 @@ volumes:
   pgdata_user:
   pgdata_account:
   pgdata_keycloak:
+  pgdata_transaction:
   rabbitmq_data:
