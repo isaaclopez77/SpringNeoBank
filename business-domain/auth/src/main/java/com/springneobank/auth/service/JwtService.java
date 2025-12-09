@@ -11,12 +11,9 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.springneobank.auth.common.OperationResult;
-import com.springneobank.auth.common.Utils;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.net.URL;
@@ -31,14 +28,11 @@ public class JwtService {
     @Value("${keycloak.jwk-set-uri}")
     private String jwksUrl;
 
-    @Value("${keycloak.certs-id}")
-    private String certsId;
-
     @Cacheable(value = "jwkCache")
-    public Jwk getJwk() throws Exception {
+    public Jwk getJwk(String kid) throws Exception {
         URL url = new URL(jwksUrl);
         UrlJwkProvider urlJwkProvider = new UrlJwkProvider(url);
-        Jwk get = urlJwkProvider.get(certsId.trim());  
+        Jwk get = urlJwkProvider.get(kid);  
         return get;
     }
 
@@ -56,7 +50,8 @@ public class JwtService {
 
             String token = authHeader.replace("Bearer", "").trim();
             DecodedJWT jwt = JWT.decode(token);
-            Jwk jwk = getJwk();
+            String kid = jwt.getKeyId();
+            Jwk jwk = getJwk(kid);
 
             // Check JWT is valid
             Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
