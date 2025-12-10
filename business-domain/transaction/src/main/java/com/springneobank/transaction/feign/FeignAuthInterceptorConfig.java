@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+/* ------------------------ INTERCEPTOR FOR PROPAGATE BEARER TOKEN ------------------ */
 @Configuration
 @Slf4j
 public class FeignAuthInterceptorConfig {

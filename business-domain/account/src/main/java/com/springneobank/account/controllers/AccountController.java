@@ -1,5 +1,6 @@
 package com.springneobank.account.controllers;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+
 
 @RestController
 @RequestMapping("/account")
@@ -79,6 +81,29 @@ public class AccountController {
 
         return ResponseEntity.ok(Map.of("message", result.getData()));
     }
+
+    @PostMapping("/debit/{account_id}")
+    public ResponseEntity<?> debit(@PathVariable("account_id") Long accountId, @RequestParam("amount") BigDecimal amount) {
+        OperationResult<?> result = accountService.debit(accountId, amount);
+
+        if(!result.isSuccess()) {
+            return ResponseEntity.internalServerError().body(Map.of("message", result.getMessage()));
+        }
+
+        return ResponseEntity.ok(Map.of("message", result.getData()));
+    }
+
+    @PostMapping("/credit/{account_id}")
+    public ResponseEntity<?> credit(@PathVariable("account_id") Long accountId, @RequestParam("amount") BigDecimal amount) {
+        OperationResult<?> result = accountService.credit(accountId, amount);
+
+        if(!result.isSuccess()) {
+            return ResponseEntity.internalServerError().body(Map.of("message", result.getMessage()));
+        }
+
+        return ResponseEntity.ok(Map.of("message", result.getData()));
+    }
+    
     
     
 }

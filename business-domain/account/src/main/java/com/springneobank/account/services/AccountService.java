@@ -1,5 +1,6 @@
 package com.springneobank.account.services;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import com.springneobank.account.feign.auth.AuthClient;
 import com.springneobank.account.repositories.AccountRepository;
 import com.springneobank.account.repositories.AccountTypeRepository;
 
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -127,6 +129,67 @@ public class AccountService {
             accountRepository.save(acc);
 
             return OperationResult.ok("Status changed");
+        } catch(Exception e) {
+            return OperationResult.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * Reduce the balance of an account
+     * 
+     * @param accountID
+     * @param amount
+     * @return
+     */
+    @Transactional
+    public OperationResult<String> debit(Long accountID, BigDecimal amount) {
+        try{
+            // Get user ID making a request to Auth microservice
+            Long userID = getUserIDRequest();
+
+            // Validations
+            Account acc = accountRepository.findByUserIdAndIdForUpdate(userID, accountID).orElseThrow(() -> new RuntimeException("Account not found"));
+            if(amount.compareTo(BigDecimal.ZERO) <= 0) {
+                return OperationResult.fail("Amount must be positive");
+            }
+            if(acc.getBalance().compareTo(amount) < 0) {
+                return OperationResult.fail("Unsufficient balance");
+            }
+
+            // Setting new balance and saving
+            acc.setBalance(acc.getBalance().subtract(amount));
+            accountRepository.save(acc);
+
+            return OperationResult.ok("Debit succeeded");
+        } catch(Exception e) {
+            return OperationResult.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * Increase the balance of an account
+     * 
+     * @param accountID
+     * @param amount
+     * @return
+     */
+    @Transactional
+    public OperationResult<String> credit(Long accountID, BigDecimal amount) {
+        try{
+            // Get user ID making a request to Auth microservice
+            Long userID = getUserIDRequest();
+
+            // Validations
+            Account acc = accountRepository.findByUserIdAndIdForUpdate(userID, accountID).orElseThrow(() -> new RuntimeException("Account not found"));
+            if(amount.compareTo(BigDecimal.ZERO) <= 0) {
+                return OperationResult.fail("Amount must be positive");
+            }
+
+            // Setting new balance and saving
+            acc.setBalance(acc.getBalance().add(amount));
+            accountRepository.save(acc);
+
+            return OperationResult.ok("Debit succeeded");
         } catch(Exception e) {
             return OperationResult.fail(e.getMessage());
         }
