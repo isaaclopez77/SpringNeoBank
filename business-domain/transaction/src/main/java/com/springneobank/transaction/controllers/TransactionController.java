@@ -69,5 +69,20 @@ public class TransactionController {
 
         return ResponseEntity.ok(Map.of("message", response.getData()));
     }
+
+    @PostMapping("/transference")
+    public ResponseEntity<?> createTransferenceTransaction(@RequestParam("target_account") Long targetId,
+                                                    @RequestParam("source_account") Long sourceId,
+                                                    @RequestParam("amount") BigDecimal amount,
+                                                    @RequestParam("description") String description) {
+
+        OperationResult<?> response = tService.transfer(sourceId, targetId, amount, description);
+
+        if(!response.isSuccess()) {
+            return ResponseEntity.badRequest().body(Map.of("message", response.getMessage()));
+        }
+
+        return ResponseEntity.ok(Map.of("message", response.getData()));
+    }
     
 }

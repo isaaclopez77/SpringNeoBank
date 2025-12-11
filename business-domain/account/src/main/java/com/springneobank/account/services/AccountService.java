@@ -144,11 +144,8 @@ public class AccountService {
     @Transactional
     public OperationResult<String> debit(Long accountID, BigDecimal amount) {
         try{
-            // Get user ID making a request to Auth microservice
-            Long userID = getUserIDRequest();
-
             // Validations
-            Account acc = accountRepository.findByUserIdAndIdForUpdate(userID, accountID).orElseThrow(() -> new RuntimeException("Account not found"));
+            Account acc = accountRepository.findByIdForUpdate(accountID).orElseThrow(() -> new RuntimeException("Account not found"));
             if(amount.compareTo(BigDecimal.ZERO) <= 0) {
                 return OperationResult.fail("Amount must be positive");
             }
@@ -176,11 +173,8 @@ public class AccountService {
     @Transactional
     public OperationResult<String> credit(Long accountID, BigDecimal amount) {
         try{
-            // Get user ID making a request to Auth microservice
-            Long userID = getUserIDRequest();
-
             // Validations
-            Account acc = accountRepository.findByUserIdAndIdForUpdate(userID, accountID).orElseThrow(() -> new RuntimeException("Account not found"));
+            Account acc = accountRepository.findByIdForUpdate(accountID).orElseThrow(() -> new RuntimeException("Account not found"));
             if(amount.compareTo(BigDecimal.ZERO) <= 0) {
                 return OperationResult.fail("Amount must be positive");
             }

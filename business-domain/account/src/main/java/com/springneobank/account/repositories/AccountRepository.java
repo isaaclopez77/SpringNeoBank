@@ -24,8 +24,8 @@ public interface AccountRepository extends JpaRepository<Account, Long>{
     Optional<Account> findByUserIdAndIbanAndId(Long user_id, String iban, Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE) // Block for avoid many operations at the same time
-    @Query("select a from Account a where a.userId = :userId and a.id = :id")
-    Optional<Account> findByUserIdAndIdForUpdate(@Param("userId") Long userId, @Param("id") Long id);
+    @Query("select a from Account a where a.id = :id")
+    Optional<Account> findByIdForUpdate(@Param("id") Long id);
 
     Optional<Account> findById(Long accountId);
 
