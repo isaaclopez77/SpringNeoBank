@@ -3,10 +3,15 @@ package com.springneobank.account.repositories;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.springneobank.account.entities.Account;
+
+import jakarta.persistence.LockModeType;
+
 import java.util.List;
 
 
@@ -17,6 +22,10 @@ public interface AccountRepository extends JpaRepository<Account, Long>{
     Optional<Long> getMaxAccountNumber();
 
     Optional<Account> findByUserIdAndIbanAndId(Long user_id, String iban, Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE) // Block for avoid many operations at the same time
+    @Query("select a from Account a where a.id = :id")
+    Optional<Account> findByIdForUpdate(@Param("id") Long id);
 
     Optional<Account> findById(Long accountId);
 
